@@ -1,0 +1,337 @@
+---
+title: "Sistemas de equações em diferenças de primeira ordem"
+author: "Henri Makika"
+date: "May 21, 2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE)
+```
+
+## Sistema de equações em diferença de 2 × 2
+
+O sistema mais simples na sua forma normal é tal que:
+
+$$x_{t+1} = a_{11}x_{t} + a_{12}y_{t} + g_1(t)$$
+$$y_{t+1} = a_{21}x_{t} + a_{22}y_{t} + g_2(t)$$
+
+## Autovalores e autovetores
+
+Para identificar os autovalores e autovetores de uma matriz quadrada, fazemos uso da função eigen do pacote base do R:
+
+```{r}
+library(Matrix)
+library(matlib)
+```
+
+Seja matrix :
+
+
+
+```{r}
+v = c(2, 1, 1, 2)
+A = matrix(v, nrow=2)
+
+r = eigen(A)
+
+lambda = r$values
+
+P = r$vectors
+print(P)
+```
+
+```{r}
+det(P)  # Diferente de zero
+```
+
+```{r}
+inv(P) %*% A %*% P
+```
+```{r}
+Ginv(P) %*% A %*% P
+```
+
+Havendo autovalores reais e diferentes, há garantia para obter *n* autovetores linearmente independentes, o que garante a existência da matriz P não singular.
+
+Havendo multiplicidade, precisamos verificar se é possível obter a matriz *P*. Obter a matriz *P* implica ter uma matriz *A* diagonalizável.
+
+## Diagonalização de matrizes
+
+Vejamos o exemplo a seguir:
+```{r}
+A = matrix(c(1, 0, 0, 2, 1, 0, 3, 2, 1), nrow = 3)
+
+r = eigen(A)
+
+lambda = r$values
+
+P = r$vectors
+print(P)
+```
+
+```{r}
+det(P) # Será que det de P é diferente de zero ?
+```
+
+```{r}
+det(P) != 0 # Sim, det de P é diferente de zero
+```
+
+```{r}
+detP = format(det(P), scientific = FALSE, trim = TRUE)
+```
+
+```{r}
+tol = 1e-5
+detP = ifelse(detP<tol, 0, round(detP, 4))
+detP != 0
+```
+
+Verificamos o grau de liberdade
+```{r}
+Ahat = A - lambda[1]*diag(1, nrow(A) )
+
+rankMatrix(Ahat)[1]
+```
+```{r}
+echelon(Ahat)
+```
+
+## Simulando um sistema com raízes reais e diferentes
+
+Neste caso, há certeza da diagonalização da matriz de coeficientes.
+```{r}
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+```
+
+```{r}
+A = matrix(c(0, 0.125, 1, .25), nrow=2)
+
+r = eigen(A)
+
+lambda = r$values
+lambda
+```
+
+```{r}
+P = r$vectors
+P
+```
+
+```{r}
+det(P)
+```
+
+
+```{r}
+Z0 = c(1,.1) # condicao inicial
+
+tmax = 20
+
+Z = matrix(0, nrow=2, ncol=tmax)
+
+Z[,1] = Z0
+
+for (t in 2:tmax){
+  Z[,t] = A %*% Z[ , t-1]
+}
+
+t(Z)
+```
+
+
+```{r}
+t = seq(1, tmax, 1)
+series = data.frame(t, x = Z[1, ], y = Z[2,])
+series
+```
+```{r}
+series_tidy = gather(series, -t, key = "serie", value = "valor")
+
+ggplot(series_tidy, aes(x=t, y=valor, color=serie)) +
+  geom_line(size=1) +
+  theme_classic()
+```
+
+Pela matriz de coeficiente ter um autovalor negativo, espera-se obervar oscilações. Ainda, como os dois autovalores são menores que a unidade em módulo, espera-se uma trajetória amortecida para o conjunto de séries do sistema.
+
+Lembre do efeito da condição inicial e da janela de tempo considerada na simulação. Obseve também que a raíz negativa possui um módulo pequeno (-0.25), que é atenuado rapidamente a medida que t aumenta.
+
+Analisando cada componente podemos ter uma melhor precepção deste caso.
+
+```{r}
+tmax = 20
+Z1 = matrix(0, nrow = 2, ncol = tmax)
+Z2 = matrix(0, nrow = 2, ncol = tmax)
+
+A1 = .1
+A2 = -.1
+
+v1 = P[, 1]
+v2 = P[, 2]
+
+for (t in 1:tmax){
+  Z1[,t] = A1*v1*lambda[1]^t
+  Z2[,t] = A2*v2*lambda[2]^t
+}
+
+t = seq(1, tmax, 1)
+
+series1 = data.frame(t, x = Z1[1, ], y = Z1[2, ], p = rep(1, length(t)),
+                     stringsAsFactors = FALSE)
+
+head( series1 )
+```
+
+```{r}
+series2 = data.frame(t, x = Z2[1, ], y = Z2[2, ], p = rep(2, length(t)),
+                     stringsAsFactors = FALSE)
+
+head( series2 )
+```
+
+```{r}
+series = bind_rows(series1, series2)
+
+series_tidy = gather(series, -t, -p, key = "serie", value = "valor")
+
+ggplot(series_tidy, aes(x = t, y = valor, color = serie, group = p)) +
+  geom_line(size = 1) +
+  facet_wrap(~p, nrow = 2) +
+  theme_classic()
+```
+
+## Simulando um sistema com raízes reais e iguais
+
+```{r}
+library(limSolve)
+```
+```{r}
+A <- matrix(c(4, -1, 1, 2), nrow = 2)
+
+r <- eigen(A) # autovalores
+
+lambda <- r$values
+print(lambda)
+```
+
+```{r}
+P <- r$vectors
+print(P)
+```
+
+```{r}
+det(P)
+```
+
+```{r}
+det(P) != 0 # Determinante de P é diferente de zero
+```
+
+```{r}
+v1 <- P[,1]
+
+
+#D <- zapsmall(ginv(P)%*%A%*%P ) # note que P deve ser inversivel
+#D
+
+#(A-lambda*I)^2*v2 = v1 # precisamos apenas uma solucao possivel
+
+M <- A - diag(lambda[1], 2)
+M
+```
+
+```{r}
+B = matrix(v1, nrow = 2)
+solucoes = xsample(E = M, F = B, iter = 100, jmp = 1)$X
+print(solucoes)
+```
+
+```{r}
+plot(solucoes[,2], solucoes[,1])
+```
+
+```{r}
+c2 = matrix( solucoes[1,], nrow = 2 )
+
+tmax = 10
+
+Z = matrix(0,2, tmax)
+
+Z[, 1] = c(2,-1)
+
+for (t in 2:tmax){
+  Z[,t] = A %*% Z[, t-1]
+}
+
+t(Z)
+
+```
+
+## Modelo de Cournot
+
+```{r}
+set.seed(1)
+
+n = 2
+a = 10
+b = 0.5
+d = 10
+c = runif(n)
+
+A = matrix(-1/2, nrow = n, ncol=n) + diag(1/2, n)
+print(A)
+```
+
+```{r}
+B = (a-c)/(2*b)
+
+tmax = 20
+
+X = matrix(0, nrow = n, ncol = tmax)
+X[, 1] = 100*runif(n) # condicoes iniciais para cada uma das n firmas
+
+# simulando
+
+for (t in 2:tmax){
+  X[, t] = A %*% X[ , t-1] + B
+}
+
+t(X)
+```
+
+```{r}
+series = as.data.frame(t(X))
+print(series)
+
+series$t = seq(1, tmax, 1)
+print(series$t)
+
+series_tidy = gather(series, -t, key = "serie", value = "valor")
+print(series_tidy)
+
+ggplot(series_tidy, aes(x = t, y = valor, color = serie)) +
+  geom_line() +
+  theme_classic()
+```
+
+```{r}
+Xeq = inv(diag(1,n) - A) %*% B
+print(Xeq)
+```
+
+```{r}
+# Verificando os autovalores
+lambda = eigen(A)$values
+print(lambda)
+```
+
+
+
+
+
+
+

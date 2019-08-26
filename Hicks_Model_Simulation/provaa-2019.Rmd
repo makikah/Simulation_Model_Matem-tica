@@ -1,0 +1,75 @@
+---
+title: "Prova HO-012"
+author: "Economia Matemátia e Simulação"
+date: "Junho de 2019"
+header-includes:
+- \usepackage{setspace}
+- \usepackage{float}
+- \usepackage{color}
+- \usepackage{hyperref}
+- \floatplacement{table}{H}
+includes:
+  in_header: preamble-latex.tex
+output:
+  pdf_document:
+    toc: no
+  word_document:
+    toc: yes
+  html_document:
+    highlight: tango
+    theme: cerulean
+    toc: yes
+---
+
+# Questão 1: Modelo de Hicks
+
+A seção 6.3 do livro texto (Gandolfo, 2010) descreve a forma mais simples do modelo de Hicks. As equações básicas que definem o modelo, a partir da extensão do modelo de interação do multiplicador-acelerador de Samuelson são
+\[  Y_t = C_t +I_t \]
+\[  C_t = bY_{t-1} \]
+\[  I_t = I^{'}_t+I^{''}_{t} \]
+\[  I^{'}_t = k(Y_{t-1} - Y_{t-2}) \]
+\[  I^{''}_t = A_0(1+g)^t \]
+
+onde
+
+* $Y_t$ é a renda total;
+* $C_t$ é o consumo das famílias;
+* $I_t$ é o investimento total;
+* $I^{'}_t$ é o investimento induzido;
+* $I^{''}_t$ é o investimento autônomo 
+
+Note-se que as principais modificações que o modelo incorpora se comparado ao modelo de Samuelson são: a) o investimento autônomo que cresce a uma taxa $g$ exógena e constante no tempo; b) a dependência do investimento agregado sobre renda total e c) o investimento induzido como função da variação da renda total em $t-1$ e em $t-2$. 
+
+Especificando os valores dos parâmetros que sejam necessários
+
+a) Em função dos parâmetros do modelo e o discriminante do polinômio característico resultante, especifique as condições de estabilidade e analise a factibilidade de cada cenário possível;
+
+b) Implemente o modelo no R e apresente as trajetórias temporais da renda, investimento e consumo das famílias para um caso estável e um caso instável, comparando ambos os cenários;
+
+c) Determine a forma explícita da trajetória temporal para $Y_t$ para um conjunto de parâmetros tal que a economia apresente ciclos amortecidos. Utilize o R para realizar os cálculos e apresente a sequência de comandos utilizada;
+
+d) Considere a abertura da economia hipotética do modelo, tal que as importações $M_t$ dependem da renda do período anterior ($M_t = mY_{t-1};~0<m<1$). As exportações, determinadas pela demanda externa sofrem variações a uma taxa $g_x$ tal que
+    \[ X_t  = X_0(1+g_x)^t \]
+
+Por simulação, analise a balança de pagamentos ($X_t,~M_t$) no longo prazo. Discuta sobre a condição de estabilidade. Ela foi alterada?;
+
+e) Se, considerando o caso anterior alteramos o modelo tal que $M_t = m_1C_t + m_2I_t$, $0<m_1<1;~0<m_2<1$ e $X_t = X_0(1+g_x)^t$. Analise as condições de estabilidade. Há diferença? Auxilie-se com a simulação do modelo.
+
+
+# Questão 2: O modelo de ciclo econômico de Kalecki
+
+Simule o modelo de ciclo econômico de Kalecki, considerando um modelo linear de coeficientes constantes de ordem 2. Analise as condições de estabilidade. Para se auxiliar, veja o texto de Possas e Baltar (1983) disponível em <http://bibliotecadigital.fgv.br/ojs/index.php/bre/article/view/3154/2050>. 
+
+que resume bem aquilo que é necessário para realizar a simulação. 
+
+A versão mais simples é suficiente (seção 2.1 desse artigo. A interpretação está na seção 2.2). Porém, sinta-se à vontade caso já tenha começado a simulação de uma das outras versões.
+
+a) Elabore a descrição do modelo e a representação formal do mesmo (as equações);
+
+b) Determine as condições de estabilidade do modelo em função dos parâmetros;
+
+c) Simule um caso estável e um caso instável.
+
+\vspace{0.50cm}
+
+**Prazo de entrega**: até segunda feira porém este prazo é negociável sob demanda. O importante é realizar os exercícios. 

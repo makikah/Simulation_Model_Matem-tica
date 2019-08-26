@@ -1,0 +1,363 @@
+---
+title: "Prova HO-012"
+author: "Economia Matem√°tia e Simula√ß√£o"
+date: "Junho de 2019"
+header-includes:
+- \usepackage{setspace}
+- \usepackage{float}
+- \usepackage{color}
+- \usepackage{hyperref}
+- \floatplacement{table}{H}
+includes:
+  in_header: preamble-latex.tex
+output:
+  pdf_document:
+    toc: no
+  word_document:
+    toc: yes
+  html_document:
+    highlight: tango
+    theme: cerulean
+    toc: yes
+---
+
+# Quest„o 1: Modelo de Hicks
+
+A seÁ„o 6.3 do livro texto (Gandolfo, 2010) descreve a forma mais simples do modelo de Hicks. As equaÁıes b·sicas que definem o modelo, a partir da extens„oo do modelo de interaÁ„o do multiplicador-acelerador de Samuelson s„o
+
+\[  Y_t = C_t +I_t \]
+\[  C_t = bY_{t-1} \]
+\[  I_t = I^{'}_t+I^{''}_{t} \]
+\[  I^{'}_t = k(Y_{t-1} - Y_{t-2}) \]
+\[  I^{''}_t = A_0(1+g)^t \]
+
+onde
+
+* $Y_t$ È a renda total;
+* $C_t$ È o consumo das famÌlias;
+* $I_t$ È o investimento total;
+* $I^{'}_t$ È o investimento induzido;
+* $I^{''}_t$ È o investimento aut√¥nomo 
+
+Note-se que as principais modificaÁıes que o modelo incorpora se comparado ao modelo de Samuelson s„o: a) o investimento autÙnomo que cresce a uma taxa $g$ exÛgena e constante no tempo; b) a dependÍncia do investimento agregado sobre renda total e c) o investimento induzido como funÁ„o da variaÁ„o da renda total em $t-1$ e em $t-2$. 
+
+Especificando os valores dos par‚metros que sejam necess·rios
+
+a) Em funÁ„o dos par‚metros do modelo e o discriminante do polinÙmio caracterÌstico resultante, especifique as condiÁıes de estabilidade e an·lise a factibilidade de cada cen·rio possÌvel;
+
+Se as raÌzes do polinÙmio caracterÌstico s„o reais, as condiÁıes de estabilidade s„o dadas por:
+$$1 + a_1 + a_0 > 0$$
+$$1 - a_1 + a_0 > 0$$
+$$1 - a_0 > 0$$
+No entanto, se as raÌzes s„o imagin·rias; i.e., quando o discriminante È menor que zero, tem-se:
+
+$$R=\sqrt a_0 < 1$$
+
+
+
+b) Implemente o modelo no R e apresente as trajet√≥rias temporais da renda, investimento e consumo das fam√≠lias para um caso est√°vel e um caso inst√°vel, comparando ambos os cen√°rios;
+```{r}
+library(ggplot2)
+library(tidyr)
+# b1)
+
+b = 0.7 # propens„o a consumir
+k = 0.2 # coeficiente de aceleraÁ„o
+a0 = 0.2
+a1 = -b - k
+a2 = 1
+A0 = 1
+g = 0.02
+
+tmax = 100
+
+Y = rep(0,tmax)
+C = rep(0,tmax)
+I1 = rep(0,tmax)
+I2 = rep(0,tmax)
+I = rep(0,tmax)
+
+Y[1] = 0
+Y[2] = 1
+
+C[t] = b*Y[t-1]
+I1[t] = k*(Y[t-1] - Y[t-2])
+I2[t] = A0*(1+g)^t
+I[t] = I1[t] + I2[t]
+Y[t] = C[t] + I[t]
+
+for (t in 3:tmax) {
+  Y[t] = C[t] + I[t]
+  C[t] = b*Y[t-1]
+  I1[t] = k*(Y[t-1] - Y[t-2])
+  I2[t] = A0*(1+g)^t
+  I[t] = I1[t] + I2[t]
+}
+
+t = seq(1, tmax, 1)
+
+series = data.frame(t, Y, C, I1, I2, I)
+series
+
+series_tidy <- gather( series, -t, key = "serie", value = "valor" )
+names(series_tidy)
+
+ggplot(series_tidy, aes(x=t, y = valor, group=serie, color = serie) ) +
+geom_line(size=1) +
+theme_light()
+````
+
+#b2)
+
+```{r}
+
+b = 0.8 # propens„o a consumir
+k = 1.3 # coeficiente de aceleraÁ„o
+a0 = 0.2
+a1 = -b - k
+a2 = 1
+A0 = 10
+g = 0.02
+
+tmax = 50
+
+Y = rep(0,tmax)
+C = rep(0,tmax)
+I1 = rep(0,tmax)
+I2 = rep(0,tmax)
+I = rep(0,tmax)
+
+Y[1] = 3
+Y[2] = 4
+
+
+C[t] = b*Y[t-1]
+I1[t] = k*(Y[t-1] - Y[t-2])
+I2[t] = A0*(1+g)^t
+I[t] = I1[t] + I2[t]
+Y[t] = C[t] + I[t]
+
+for (t in 3:tmax) {
+  Y[t] = C[t] + I[t]
+  C[t] = b*Y[t-1]
+  I1[t] = k*(Y[t-1] - Y[t-2])
+  I2[t] = A0*(1+g)^t
+}
+
+t = seq(1, tmax, 1)
+
+series = data.frame(t, Y, C, I1, I2)
+series
+
+series_tidy <- gather( series, -t, key = "serie", value = "valor" )
+names(series_tidy)
+
+ggplot(series_tidy, aes(x=t, y = valor, group=serie, color = serie) ) +
+geom_line(size=1) +
+theme_light()
+```
+
+c) Determine a forma explÌcita da trajetÛria temporal para $Y_t$ para um conjunto de par‚metros tal que a economia apresente ciclos amortecidos. Utilize o R para realizar os c·lculos e apresente a sequÍncia de comandos utilizada;
+
+Isto È, quando o discriminante È negativo e a raiz do polinÙmio caracterÌstico È menor que 1.
+```{r}
+k = 2/10
+R = sqrt(k)
+
+```
+
+
+d) Considere a abertura da economia hipotÈtica do modelo, tal que as importaÁıes $M_t$ dependem da renda do perÌodo anterior ($M_t = mY_{t-1};~0<m<1$). As exportaÁıes, determinadas pela demanda externa sofrem variaÁıes a uma taxa $g_x$ tal que
+    \[ X_t  = X_0(1+g_x)^t \]
+
+Por simulaÁ„o, analise o balanÁo de pagamentos ($X_t,~M_t$) no longo prazo. Discuta sobre a condiÁ„o de estabilidade. Ela foi alterada?;
+
+```{r}
+b = 0.7 # propens„o a consumir
+k = 0.2 # coeficiente de aceleraÁ„o
+A0 = 10
+g = 0.02
+X0 = 10
+gx = 0.02
+m = 0.2
+a0 = 0.2
+a1 = - b - k + m
+a2 = 1
+
+tmax = 100
+
+Y = rep(0,tmax)
+C = rep(0,tmax)
+I1 = rep(0,tmax)
+I2 = rep(0,tmax)
+I = rep(0,tmax)
+X = rep(0,tmax)
+M = rep(0,tmax)
+
+C[t] = b*Y[t-1]
+I1[t] = k*(Y[t-1] - Y[t-2])
+I2[t] = A0*(1+g)^t
+I[t] = I1[t] + I2[t]
+X[t] = X0*(1+gx)^t
+M[t] = m*Y[t-1]
+Y[t] = C[t] + I[t] + X[t] - M[t]
+
+Y[1] = 3
+Y[2] = 4
+
+for (t in 3:tmax) {
+  Y[t] = C[t] + I[t] + X[t] - M[t]
+  C[t] = b*Y[t-1]
+  I1[t] = k*(Y[t-1] - Y[t-2])
+  I2[t] = A0*(1+g)^t
+  X[t] = X0*(1+gx)^t
+  M[t] = m*Y[t-1]
+}
+
+t = seq(1, tmax, 1)
+
+series = data.frame(t, Y, C, I1, I2, X, M)
+series
+
+series_tidy <- gather( series, -t, key = "serie", value = "valor" )
+names(series_tidy)
+
+ggplot(series_tidy, aes(x=t, y = valor, group=serie, color = serie) ) +
+geom_line(size=1) +
+theme_light()
+```
+
+
+e) Se, considerando o caso anterior alteramos o modelo tal que $M_t = m_1C_t + m_2I_t$, $0<m_1<1;~0<m_2<1$ e $X_t = X_0(1+g_x)^t$. Analise as condi√ß√µes de estabilidade. H√° diferen√ßa? Auxilie-se com a simula√ß√£o do modelo.
+
+```{r}
+b = 0.7 # propens„o a consumir
+k = 0.2 # coeficiente de aceleraÁ„o
+A0 = 1
+g = 0.02
+X0 = 5
+gx = 0.02
+m1 = 0.3
+m2 = 0.4
+a0 = 0.2
+a1 = - b - k
+a2 = 1
+
+tmax = 100
+
+Y = rep(0,tmax)
+C = rep(0,tmax)
+I1 = rep(0,tmax)
+I2 = rep(0,tmax)
+I = rep(0,tmax)
+X = rep(0,tmax)
+M = rep(0,tmax)
+
+C[t] = b*Y[t-1]
+I1[t] = k*(Y[t-1] - Y[t-2])
+I2[t] = A0*(1+g)^t
+I[t] = I1[t] + I2[t]
+X[t] = X0*(1+gx)^t
+M[t] = m1*C[t] + m2*I[t]
+Y[t] = C[t] + I[t] + X[t] - M[t]
+
+Y[1] = 3
+Y[2] = 4
+
+for (t in 3:tmax) {
+  C[t] = b*Y[t-1]
+  I1[t] = k*(Y[t-1] - Y[t-2])
+  I2[t] = A0*(1+g)^t
+  I[t] = I1[t] + I2[t]
+  X[t] = X0*(1+gx)^t
+  M[t] = m1*C[t] + m2*I[t]
+  Y[t] = C[t] + I[t] + X[t] - M[t]
+}
+
+t = seq(1, tmax, 1)
+
+series = data.frame(t, Y, C, I1, I2, X, M)
+series
+
+series_tidy <- gather( series, -t, key = "serie", value = "valor" )
+names(series_tidy)
+
+ggplot(series_tidy, aes(x=t, y = valor, group=serie, color = serie) ) +
+geom_line(size=1) +
+theme_light()
+```
+
+
+# Quest„o 2: O modelo de ciclo econÙmico de Kalecki
+
+Simule o modelo de ciclo econÙmico de Kalecki, considerando um modelo linear de coeficientes constantes de ordem 2. Analise as condi√ß√µes de estabilidade. Para se auxiliar, veja o texto de Possas e Baltar (1983) dispon√≠vel em <http://bibliotecadigital.fgv.br/ojs/index.php/bre/article/view/3154/2050>. 
+
+que resume bem aquilo que √© necess√°rio para realizar a simula√ß√£o. 
+
+A vers√£o mais simples √© suficiente (se√ß√£o 2.1 desse artigo. A interpreta√ß√£o est√° na se√ß√£o 2.2). Por√©m, sinta-se √† vontade caso j√° tenha come√ßado a simula√ß√£o de uma das outras vers√µes.
+
+a) Elabore a descriÁ„o do modelo e a representaÁ„o formal do mesmo (as equaÁıes);
+
+
+
+b) Determine as condi√ß√µes de estabilidade do modelo em fun√ß√£o dos par√¢metros;
+
+O modelo com ciclo para ser est·vel requer que $R=\sqrt a_0=\sqrt {m+n}<1$.
+
+
+c) Simule um caso est√°vel e um caso inst√°vel.
+
+Caso est·vel
+```{r}
+
+m = 0.6
+n = 0.1
+a2 = 1
+a1 = -(m + 1)
+a0 = m + n
+discriminante = a0^2 + 4*a1*a2
+discriminante
+B = 5
+U = 1
+lambda = 0.6
+
+tmax = 50
+
+P = rep(0, tmax)
+C = rep(0, tmax)
+I = rep(0, tmax)
+A = rep(0, tmax)
+K = rep(0, tmax)
+
+C[t] = B + lambda*P[t]
+I[t] = m*(B + A[t]) - n*K[t]
+P[t] = C[t] + A[t]
+
+
+K[1] = 10
+K[2] = 15
+
+for (t in 3:tmax) {
+  C[t] = B + lambda*P[t]
+  I[t] = m*(B + A[t]) - n*K[t]
+  P[t] = C[t] + A[t]
+}
+
+t = seq(1, tmax, 1)
+
+series = data.frame(t, K, P, C, I, A)
+series
+
+series_tidy <- gather( series, -t, key = "serie", value = "valor" )
+names(series_tidy)
+
+ggplot(series_tidy, aes(x=t, y = valor, group=serie, color = serie) ) +
+geom_line(size=1) +
+theme_light()
+
+```
+
+
+\vspace{0.50cm}
+
+**Prazo de entrega**: at√© segunda feira por√©m este prazo √© negoci√°vel sob demanda. O importante √© realizar os exerc√≠cios. 

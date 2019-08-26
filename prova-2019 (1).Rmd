@@ -1,0 +1,562 @@
+---
+title: "Prova HO-012"
+author: "Economia MatemÃ¡tia e SimulaÃ§Ã£o"
+date: "Junho de 2019"
+header-includes:
+- \usepackage{setspace}
+- \usepackage{float}
+- \usepackage{color}
+- \usepackage{hyperref}
+- \floatplacement{table}{H}
+includes:
+  in_header: preamble-latex.tex
+output:
+  html_document:
+    highlight: tango
+    theme: cerulean
+    toc: yes
+  word_document:
+    toc: yes
+  pdf_document:
+    toc: no
+---
+
+# Questão 1: Modelo de Hicks
+
+A seção 6.3 do livro texto (Gandolfo, 2010) descreve a forma mais simples do modelo de Hicks. As equações básicas que definem o modelo, a partir da extensãoo do modelo de interação do multiplicador-acelerador de Samuelson são
+
+\[  Y_t = C_t +I_t \]
+\[  C_t = bY_{t-1} \]
+\[  I_t = I^{'}_t+I^{''}_{t} \]
+\[  I^{'}_t = k(Y_{t-1} - Y_{t-2}) \]
+\[  I^{''}_t = A_0(1+g)^t \]
+
+onde
+
+* $Y_t$ é a renda total;
+* $C_t$ é o consumo das famílias;
+* $I_t$ é o investimento total;
+* $I^{'}_t$ é o investimento induzido;
+* $I^{''}_t$ é o investimento autônomo 
+
+Note-se que as principais modificações que o modelo incorpora se comparado ao modelo de Samuelson são: a) o investimento autônomo que cresce a uma taxa $g$ exógena e constante no tempo; b) a dependência do investimento agregado sobre renda total e c) o investimento induzido como função da variação da renda total em $t-1$ e em $t-2$. 
+
+Especificando os valores dos parâmetros que sejam necessários
+
+a) Em função dos parâmetros do modelo e o discriminante do polinômio característico resultante, especifique as condições de estabilidade e análise a factibilidade de cada cenário possível;
+
+Se as raízes do polinômio característico são reais, i.e., quando o discriminante é igual ou maior que zero, as condições de estabilidade são dadas por:
+$$1 + a_1 + a_0 > 0$$
+$$1 - a_1 + a_0 > 0$$
+$$1 - a_0 > 0$$
+No entanto, se as raízes são complexas, i.e., quando o discriminante é menor que zero, tem-se:
+
+$$R=\sqrt a_0 < 1$$
+Inicialmente, resolvendo todas as equações para $Y$, pode-se resumir o modelo em uma única equação:
+$$Y_t - bY_{t-1} - kY_{t-1} + kY_{t-2} - A_0(1+g)^t = 0$$
+$$kY_{t-2} - (b+k)Y_{t-1} + Y_t = A_0(1+g)^t$$
+Adiantando os índices por dois períodos:
+$$Y_{t+2} - (b+k)Y_{t+1} + kY_t = A_0(1+g)^{t+2}$$
+
+De modo que $a_2 = 1$, $a_1 = -(b + k)$ e $a_0 = k$.
+
+Os parâmetros do modelo são especificados como:
+```{r}
+b = 0.9 # propensão a consumir
+k = 0.4 # coeficiente de aceleração
+a0 = k
+a1 = -(b + k)
+a2 = 1
+A0 = 1
+g = 0.02
+```
+
+O discriminante ($\Delta$) pode então ser calculado como:
+
+$$\Delta = a_1^2 - 4a_2a_0$$
+
+```{r}
+delta = a1^2 - 4*a2*a0
+delta
+```
+Uma vez que o valor é maior que zero, tem-se, como solução, raízes reais distintas no polinômio característico. Neste caso, as condições de estabilidade aplicadas referem-se ao caso de raízes reais. Isto é:
+
+```{r}
+1 + a1 + a0 > 0
+1 - a1 + a0 > 0
+1 - a0 > 0
+```
+Dado que as três condições são verdadeiras, o sistema é estável para os valores dos parâmetros considerados. De fato, pode-se verificar isso a partir das raízes do sistema:
+
+```{r}
+coefs = c(a0, a1, a2)
+roots = polyroot(coefs)
+roots
+```
+Isto é, ambas tem valor inferior a 1; sendo que mesmo a raiz dominante tem valor menor que 1 (= 0,8).
+
+
+b) Implemente o modelo no R e apresente as trajetórias temporais da renda, investimento e consumo das famílias para um caso estável e um caso instável, comparando ambos os cenários;
+
+Utilizam-se os pacotes:
+
+```{r}
+library(ggplot2)
+library(tidyr)
+```
+
+Caso estável:
+
+```{r}
+
+b = 0.9 # propensão a consumir
+k = 0.4 # coeficiente de aceleração
+a0 = k
+a1 = -(b + k)
+a2 = 1
+A0 = 10
+g = 0.02
+
+delta = a1^2 - 4*a2*a0
+delta
+
+coefs = c(a0, a1, a2)
+roots = polyroot(coefs)
+roots
+````
+
+```{r}
+tmax = 100
+Y = rep(0,tmax)
+C = rep(0,tmax)
+I1 = rep(0,tmax)
+I2 = rep(0,tmax)
+I = rep(0,tmax)
+
+Y[1] = 50  #valor inicial da renda nacional
+Y[2] = 60  #valor inicial da renda nacional
+
+
+for (t in 3:tmax) {
+  Y[t] = C[t] + I[t]
+  C[t] = b*Y[t-1]
+  I1[t] = k*(Y[t-1] - Y[t-2])
+  I2[t] = A0*(1+g)^t
+  I[t] = I1[t] + I2[t]
+}
+
+t = seq(1, tmax, 1)
+
+series = data.frame(t, Y, C, I)
+series
+
+series_tidy <- gather( series, -t, key = "serie", value = "valor" )
+names(series_tidy)
+
+ggplot(series_tidy, aes(x=t, y = valor, group=serie, color = serie) ) +
+geom_line(size=1) +
+theme_light()
+```
+
+Caso instável
+
+```{r}
+b = 1.8 # propensão a consumir
+k = 0.3 # coeficiente de aceleração
+a0 = k
+a1 = -(b + k)
+a2 = 1
+A0 = 10
+g = 0.02
+
+delta = a1^2 - 4*a2*a0
+delta
+
+coefs = c(a0, a1, a2)
+roots = polyroot(coefs)
+roots
+```
+
+```{r}
+tmax = 100
+Y = rep(0,tmax)
+C = rep(0,tmax)
+I1 = rep(0,tmax)
+I2 = rep(0,tmax)
+I = rep(0,tmax)
+
+Y[1] = 50  #valor inicial da renda nacional
+Y[2] = 60  #valor inicial da renda nacional
+
+
+for (t in 3:tmax) {
+  Y[t] = C[t] + I[t]
+  C[t] = b*Y[t-1]
+  I1[t] = k*(Y[t-1] - Y[t-2])
+  I2[t] = A0*(1+g)^t
+  I[t] = I1[t] + I2[t]
+}
+
+t = seq(1, tmax, 1)
+
+series = data.frame(t, Y, C, I)
+series
+
+series_tidy <- gather( series, -t, key = "serie", value = "valor" )
+names(series_tidy)
+
+ggplot(series_tidy, aes(x=t, y = valor, group=serie, color = serie) ) +
+geom_line(size=1) +
+theme_light()
+```
+
+c) Determine a forma explícita da trajetória temporal para $Y_t$ para um conjunto de parâmetros tal que a economia apresente ciclos amortecidos. Utilize o R para realizar os cálculos e apresente a sequência de comandos utilizada;
+
+Neste caso, para que tal resultado ocorra (raízes complexas conjugadas estáveis) é necessário que o discriminante seja menor que um e que o módulo $R=\sqrt a_0 <1$.
+
+Usam-se os pacotes:
+
+```{r}
+library(matlib)
+library(MASS)
+```
+
+```{r}
+b = 0.9 # propensão a consumir
+k = 0.7 # coeficiente de aceleração
+a0 = k
+a1 = -(b + k)
+a2 = 1
+A0 = 10
+g = 0.02
+
+delta = a1^2 - 4*a2*a0
+delta
+
+coefs = c(a0, a1, a2)
+roots = polyroot(coefs)
+roots
+R = Mod(roots[1])
+R
+theta = Arg(roots[1])
+theta
+
+tmax = 100
+y = rep(0, tmax)
+y[1] = 50
+y[2] = 60
+
+#identificação das constantes
+
+#y0 = A3
+#y1 = y1 = R*(A3*cos(theta) + A4*sin(theta))
+#y1 = A3*R*cos(theta) + A4*R*sin(theta)
+
+A = matrix(c(1, R*cos(theta), 0, R*sin(theta)), 2 )
+B = c(y[1], y[2])
+X = ginv(A) %*%B
+A3 = X[1]
+A4 = X[2]
+for (t in 3: tmax){
+y[t] = R^t *(A3*cos(theta*t) + A4*sin(theta*t))
+}
+series = data.frame(t = 1: tmax, y = y)
+ggplot(series, aes(x=t, y=y)) +
+geom_line() +
+theme_classic()
+
+```
+Nota-se que o discriminante é menor que zero e o módulo de R é menor que 1. Assim, tem-se um sistema com ciclos e convergente (ciclos amortecidos).
+
+d) Considere a abertura da economia hipotética do modelo, tal que as importações $M_t$ dependem da renda do período anterior ($M_t = mY_{t-1};~0<m<1$). As exportações, determinadas pela demanda externa sofrem variações a uma taxa $g_x$ tal que
+    \[ X_t  = X_0(1+g_x)^t \]
+
+Por simulação, analise o balanço de pagamentos ($X_t,~M_t$) no longo prazo. Discuta sobre a condição de estabilidade. Ela foi alterada?;
+
+Com a introdução do setor externo, o modelo deve ser escrito como:
+
+$$Y_t = C_t + I_t + X_t - M_t$$
+Introduzindo as novas especificações e resolvendo o conjunto de equações para $Y$, vem
+
+$$Y_t - (b+k)Y_{t-1} + kY_{t-2} + mY_{t-1} = A_0(1+g)^t + X_0(1+g_x)^t$$
+Adiantando, mais uma vez, dois períodos, chega-se a
+$$Y_{t+2} - (b+k)Y_{t+1} + kY_t + mY_{t+1} = A_0(1+g)^{t+2} + X_0(1+g_x)^{t+2}$$
+$$Y_{t+2} - (b+k-m)Y_{t+1} + kY_t = A_0(1+g)^{t+2} + X_0(1+g_x)^{t+2}$$
+
+```{r}
+b = 0.9 # propensão a consumir
+k = 0.4 # coeficiente de aceleração
+m = 0.2 # propensão a importar
+A0 = 10
+g = 0.02
+X0 = 10
+gx = 0.01
+a0 = k
+a1 = -(b + k - m)
+a2 = 1
+
+delta = a1^2 - 4*a2*a0
+delta
+
+coefs = c(a0, a1, a2)
+roots = polyroot(coefs)
+roots
+R = Mod(roots[1])
+R
+```
+A inclusão do setor externo não torna o sistema instável. No entanto, o sistema passa agora apresentar ciclos amortecidos.
+
+```{r}
+tmax = 100
+
+Y = rep(0,tmax)
+C = rep(0,tmax)
+I1 = rep(0,tmax)
+I2 = rep(0,tmax)
+I = rep(0,tmax)
+X = rep(0,tmax)
+M = rep(0,tmax)
+BP = rep(0, tmax)
+
+Y[1] = 50
+Y[2] = 60
+
+for (t in 3:tmax) {
+  C[t] = b*Y[t-1]
+  I1[t] = k*(Y[t-1] - Y[t-2])
+  I2[t] = A0*(1+g)^t
+  I[t] = I1[t] + I2[2]
+  Y[t] = C[t] + I[t] + X[t] - M[t]
+  BP[t] = X0*(1+gx)^t - m*Y[t-1]  #dinâmica do balanço de pagamentos ao longo do tempo
+}
+
+t = seq(1, tmax, 1)
+
+series = data.frame(t, Y, C, I, BP)
+series
+
+series_tidy <- gather( series, -t, key = "serie", value = "valor" )
+names(series_tidy)
+
+ggplot(series_tidy, aes(x=t, y = valor, group=serie, color = serie) ) +
+geom_line(size=1) +
+theme_light()
+```
+
+
+e) Se, considerando o caso anterior alteramos o modelo tal que $M_t = m_1C_t + m_2I_t$, $0<m_1<1;~0<m_2<1$ e $X_t = X_0(1+g_x)^t$. Analise as condições de estabilidade. Há diferença? Auxilie-se com a simulação do modelo.
+
+Neste caso, a nova especificação para as importações dentro da equação do produto pela ótica da despesa, gera
+
+$$Y_t - (b+k)Y_{t-1} + kY_{t-2} + m_1C_t + m_2I_t = A_0(1+g)^t + X_0(1+g_x)^t$$
+$$Y_t - [(1-m_1)b + (1-m_2)k]Y_{t-1} + (1-m_2)kY_{t-2} = (1-m_2)A_0(1+g)^t + X_0(1+g_x)^t$$
+Adiantando dois períodos, pode-se escrever
+$$(1-m_2)kY_t - [(1-m_1)b + (1-m_2)k]Y_{t+1} + Y_{t+2} = (1-m_2)A_0(1+g)^{t+2}+X_0(1+g_x)^{t+2}$$
+
+```{r}
+b = 0.9 # propensão a consumir
+k = 0.4 # coeficiente de aceleração
+m1 = 0.1 # propensão a importar
+m2 = 0.1
+A0 = 10
+g = 0.02
+X0 = 10
+gx = 0.01
+a0 = (1 - m2)*k
+a1 = -(1-m1)*b -(1-m2)*k
+a2 = 1
+
+delta = a1^2 - 4*a2*a0
+delta
+
+coefs = c(a0, a1, a2)
+roots = polyroot(coefs)
+roots
+R = Mod(roots[1])
+R
+```
+Nota-se que, embora a forma funcional das importações tenha sido alterada, não há qualquer mudança na estabilidade do sistema. Este continua com ciclos amortecidos.
+
+
+```{r}
+tmax = 100
+
+Y = rep(0,tmax)
+C = rep(0,tmax)
+I1 = rep(0,tmax)
+I2 = rep(0,tmax)
+I = rep(0,tmax)
+X = rep(0,tmax)
+M = rep(0,tmax)
+
+Y[1] = 50
+Y[2] = 60
+
+for (t in 3:tmax) {
+  C[t] = b*Y[t-1]
+  I1[t] = k*(Y[t-1] - Y[t-2])
+  I2[t] = A0*(1+g)^t
+  I[t] = I1[t] + I2[t]
+  X[t] = X0*(1+gx)^t
+  M[t] = m1*C[t] + m2*I[t]
+  Y[t] = C[t] + I[t] + X[t] - M[t]
+}
+
+t = seq(1, tmax, 1)
+
+series = data.frame(t, Y, C, I, X, M)
+series
+
+series_tidy <- gather( series, -t, key = "serie", value = "valor" )
+names(series_tidy)
+
+ggplot(series_tidy, aes(x=t, y = valor, group=serie, color = serie) ) +
+geom_line(size=1) +
+theme_light()
+```
+
+# Questão 2: O modelo de ciclo econômico de Kalecki
+
+Simule o modelo de ciclo econômico de Kalecki, considerando um modelo linear de coeficientes constantes de ordem 2. Analise as condições de estabilidade. Para se auxiliar, veja o texto de Possas e Baltar (1983) disponível em <http://bibliotecadigital.fgv.br/ojs/index.php/bre/article/view/3154/2050>. 
+
+que resume bem aquilo que Ã© necessÃ¡rio para realizar a simulação. 
+
+A versão mais simples é suficiente (seção 2.1 desse artigo. A interpretação está na seção 2.2). Porém, sinta-se à vontade caso já tenha começado a simulação de uma das outras versões.
+
+a) Elabore a descrição do modelo e a representação formal do mesmo (as equações);
+
+Em linhas gerais, o modelo de ciclo econômico do Kalecki fornece uma explicação básica para o mecanismo das flutuações endógenas das economias capitalistas. Por um lado, considera-se a influência do nível da renda e, por outro, da taxa de crescimento do produto sobre as flutuações na atividade econômica.
+
+Formalmente, a primeira versão do modelo de ciclo de Kalecki (1933) é descrito a seguir.
+
+Definições: $P$ = lucros; $C$ = consumo dos capitalistas; $B$ = parte constante do consumo dos capitalistas; $I$ = investimento bruto (encomendas); $A$ = produção e entrega de bens de investimento, sendo $A_t = I_{t-\theta}$, em que $\theta$ é o período médio de construção e instalação dos equipamentos e $t$ é um período de tempo discreto ($t=1,2,...,n$); $K$ = capital fixo (no início do período).
+
+Seja:
+
+$$P_t = C_t + A_t$$
+$$C_t = B + \lambda P_t$$
+em que $\lambda$ é constante no curto prazo.
+
+As duas equações descritas fornecem:
+$$I_t/K_t = f (P_t/K_t)$$
+em que $P/K$ é a rentabilidade real do capital existente; uma aproximação da rentabilidade esperada do novo capital. O valor de $P/K$ é proporcional a $(B+A)/K$. Assim, pode-se escrever a função de acumulação de capital como:
+$$I_t/K_t = \phi[(B+A_t)/K_t]$$
+Se essa função for especificada numa forma linear, obtém-se
+$$I_t/K_t = m (B+A_t)/K_t - n$$
+ou:
+$$I_t = m(B+A_t) - nK_t$$
+De modo que essa equação de determinação do nível do investimento deve ter $m>0$, $\phi>0$ e $n>0$ para que o modelo comporte a ocorrência de ciclos econômicos.
+
+Em cada período de tempo $t$, por definição, tem-se
+$$\Delta K_t = K_{t+1} - K_t = A_t + U$$
+em que $U$ representa a reposição de capital, cujas flutuações supõe-se respresíveis.
+
+Uma vez que $I_t = A_{t+\theta}$ e assumindo $\theta = 1$, pode-se então substitutir a equação da variação do estoque de capital na equação da determinação do nível de investimento:
+
+$$K_{t+2} - (m + 1) K_{t+1} + (m+n) K_t = mB + (m - 1)U$$
+
+b) Determine as condições de estabilidade do modelo em função dos parâmetros;
+
+O modelo com ciclo para ser estável requer que $R=\sqrt a_0=\sqrt {m+n}<1$. O ciclo depende do valor do discriminante, que deve ser menor que zero.
+
+A ocorrência de ciclos, portanto, requer $\Delta = a_1^2 - 4a_0a_2 < 0$. Os valores dos coeficientes $a_1$ e $a_0$ são definidos como:
+
+$$a_1=-(m+1); a_0 = m+n$$
+logo, a condição de $a_1^2 < 4a_2a_0$, expressa-se como $(m+1)^2<4(m+n)$; ou $m^2 + 2m + 1 < 4m + 4n$, em que:
+$$(m-1)^2<4n$$
+Isso requer, necessariamente, $n>0$.
+
+Finalmente, a estabilidade do modelo é escrita por: $R= m+n <1$.
+
+
+c) Simule um caso estável e um caso instável.
+
+Caso estável
+
+```{r}
+m = 0.3
+n = 0.4
+a2 = 1
+a1 = -(m + 1)
+a0 = m + n
+
+delta = a1^2 - 4*a2*a0
+delta
+
+coefs = c(a0, a1, a2)
+roots = polyroot(coefs)
+roots
+R = Mod(roots[1])
+R
+theta = Arg(roots[1])
+theta
+
+tmax = 100
+y = rep(0, tmax)
+y[1] = 50
+y[2] = 60
+
+#identificação das constantes
+
+#y0 = A3
+#y1 = y1 = R*(A3*cos(theta) + A4*sin(theta))
+#y1 = A3*R*cos(theta) + A4*R*sin(theta)
+
+A = matrix(c(1, R*cos(theta), 0, R*sin(theta)), 2 )
+B = c(y[1], y[2])
+X = ginv(A) %*%B
+A3 = X[1]
+A4 = X[2]
+for (t in 3: tmax){
+y[t] = R^t *(A3*cos(theta*t) + A4*sin(theta*t))
+}
+series = data.frame(t = 1: tmax, y = y)
+ggplot(series, aes(x=t, y=y)) +
+geom_line() +
+theme_classic()
+```
+
+Caso instável (assume-se $m+n>1$)
+
+```{r}
+m = 0.9
+n = 0.6
+a2 = 1
+a1 = -(m + 1)
+a0 = m + n
+
+delta = a1^2 - 4*a2*a0
+delta
+
+coefs = c(a0, a1, a2)
+roots = polyroot(coefs)
+roots
+R = Mod(roots[1])
+R  #nota-se que o valor de R é superior a 1, indicando a instabilidade do modelo.
+theta = Arg(roots[1])
+theta
+
+tmax = 100
+y = rep(0, tmax)
+y[1] = 50
+y[2] = 60
+
+#identificação das constantes
+
+#y0 = A3
+#y1 = y1 = R*(A3*cos(theta) + A4*sin(theta))
+#y1 = A3*R*cos(theta) + A4*R*sin(theta)
+
+A = matrix(c(1, R*cos(theta), 0, R*sin(theta)), 2 )
+B = c(y[1], y[2])
+X = ginv(A) %*%B
+A3 = X[1]
+A4 = X[2]
+for (t in 3: tmax){
+y[t] = R^t *(A3*cos(theta*t) + A4*sin(theta*t))
+}
+series = data.frame(t = 1: tmax, y = y)
+ggplot(series, aes(x=t, y=y)) +
+geom_line() +
+theme_classic()
+```

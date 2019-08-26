@@ -1,0 +1,844 @@
+---
+title: |
+  |
+  | University of Campinas - UNICAMP  
+  |
+  |
+  |
+  | **Economia Matemátia e Simulação**
+  |
+  |       *Prova HO-012*
+  |
+  |
+  | Supervisora: Ivette Luna
+  |
+  |
+author: |
+  | ------------------------------------------------
+  | Henri Makika (211042)
+  | ------------------------------------------------
+
+
+date: "Junho 10, 2019"
+output: pdf_document
+---
+
+\begin{center}
+\includegraphics[width=50mm]{logo-unicamp-name-line-blk-red-0240.eps}
+\end{center}
+
+
+\newpage
+
+\tableofcontents
+
+\newpage
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE,
+                      fig.width = 10, fig.height = 6)
+```
+
+## Questão 1: Modelo de Hicks
+
+A seção 6.3 do livro texto (Gandolfo, 2010) descreve a forma mais simples do modelo de Hicks. As equações básicas que definem o modelo, a partir da extensão do modelo de interação do multiplicador-acelerador de Samuelson são :
+
+$$Y_{t} = C_{t} + I_{t}$$
+$$C_{t} = bY_{t-1}$$
+$$I_{t} = I_{t}^{'} + I_{t}^{''}$$
+$$I_{t}^{'} = k(Y_{t-1} - Y_{t-2})$$
+$$I_{t}^{''} = A_{0} (1+g)^{t}$$
+
+### a) Em função dos parâmetros do modelo e o discriminante do polinômio característico resultante, especifique as condições de estabilidade e analise a factibilidade de cada cenário possível;
+
+Resposta a :
+
+Para responder nesta quesstão precisamos reescrever a equação de condição de equilíbrio, ou seja:
+
+$$Y_{t} - (b + k)Y_{t-1} + kY_{t-2} = A_{0} (1+g)^{t}$$
+
+
+```{r importação dos Packages}
+library(tidyr)
+library(ggplot2)
+library(dplyr)
+library(limSolve)
+library(matlib)
+library(mosaic)
+```
+
+Para investigar as condições de estabilidade da equação acima, ou seja equação em diferença de segunda ordem, vamos precizar de matriz jacobiana e a equação característica correspondente, pode facilmente obter suas raízes ou autovalores :
+
+$$\lambda_{1,2} = \frac{a+c}{2} \pm \frac{1}{2} \sqrt{(a+c)-4a} < 0$$
+
+O polinômio característico é dado por :
+
+$$\lambda^{2} + a_{1} \lambda + a_{0} = 0$$
+
+A solução homogênea da equação acima é :
+
+$$Y_{t} - (b + k)Y_{t-1} + kY_{t-2} = B$$
+
+Em que 
+
+$$a_{1} = -(b+k) ; a_{0} = k$$
+
+Reescrevendo o polinômio característico como :
+
+$$\lambda^{2} - (b+k) \lambda+ k = 0$$
+
+Condição 1 : $1+a_{0} + a_{1} > 0$;
+Condição 2 : $1-a_{1} + a_{0} > 0$;
+condição 3 : $a_{0} < 0$.
+
+Isto é no caso que o determinante seja superior a zero.
+
+No entanto, se o discriminante é menor que zero, tem-se:
+
+$$R = \sqrt{a_{0}} < 1$$
+```{r}
+set.seed(12345)
+k = 0.5
+b = 0.9
+a0 = k
+a1 = -(b + k)
+a2 = 1
+
+# Analise das condições
+condicao1 = 1 + a1 + a0 > 0
+condicao2 = 1 - a1 + a0 > 0
+condicao3 = a0 < 1
+
+condicoes = condicao1 & condicao2 & condicao3
+
+if (condicoes){
+print("Trajetória estável")
+} else {
+print("Trajetória instável")
+}
+```
+
+
+
+```{r}
+coeficients = c(a0, a1, a2)
+
+# calculando o discriminante
+delta = a1^2 -4*a2*a0
+delta
+```
+
+
+```{r}
+raizes = polyroot(coeficients)
+raizes
+```
+
+
+```{r}
+if (delta >=0){
+  raizes_reais <- Re( raizes )
+  raizes_reais
+  cat("Raízes reais: ", raizes_reais)
+} else{R <- Mod(raizes[1])
+R
+cat("Raízes complexas com módulo ", R)
+}
+```
+
+Para que o modelo de Hicks seja estável, é necessário que o $b < 1$ que a propensão a consumir et que $0<k<1$ que o coeficiente de acelerador. 
+
+### b) Implemente o modelo no R e apresente as trajetórias temporais da renda, investimento e consumo das famílias para um caso estável e um caso instável, comparando ambos os cenários;
+
+Caso estável :
+
+```{r}
+k = 0.5
+b = 0.9
+a0 = k
+a1 = -(b + k)
+a2 = 1
+A0 = 10
+g = 0.2
+
+tmax = 50
+
+Y = rep(0,tmax)
+C = rep(0,tmax)
+Iindu = rep(0,tmax)
+Iauto = rep(0,tmax)
+I = rep(0, tmax)
+
+Y[1] = 1
+Y[2] = 4
+C[1] = 1
+
+
+for (t in 3:tmax) {
+  C[t] = b*Y[t-1]
+  Iindu[t] = k*(Y[t-1] - Y[t-2])
+  Iauto[t] = A0*(1+g)^t
+  I[t] = k*(Y[t-1] - Y[t-2]) + A0*(1+g)^t
+  Y[t] = C[t] + I[t]
+}
+
+t = seq(1, tmax, 1)
+
+series.fradata = data.frame(t, C, Iindu,Iauto, I, Y)
+
+series_tidy <- gather( series.fradata, -t, key = "serie", value = "valor" )
+names(series_tidy)
+
+ggplot(series_tidy, aes(x = t, y = valor, group = serie, color = serie) ) +
+  geom_line(size=1) + theme_light()
+```
+
+Analisamos o comportamento da renda nacional : 
+
+```{r}
+ggplot(series.fradata,aes(x = t, y = Y)) + geom_point(color = "red") +
+  geom_line()+ theme_classic()
+```
+
+
+
+
+Caso instável :
+
+
+```{r}
+set.seed(123)
+k = 2
+b = 0.9
+a0 = k
+a1 = -b + k
+a2 = 1
+
+# Analise das condições
+condicao1 = 1 + a1 + a0 > 0
+condicao2 = 1 - a1 + a0 > 0
+condicao3 = a0 < 1
+
+condicoes = condicao1 & condicao2 & condicao3
+
+if (condicoes){
+print("Trajetória estável")
+} else {
+print("Trajetória instável")
+}
+
+coeficients = c(a0, a1, a2)
+
+# calculando o discriminante
+delta = a1^2 - 4*a2*a0
+delta
+
+raizes = polyroot(coeficients)
+raizes
+
+if (delta >=0){
+  raizes_reais <- Re( raizes )
+  raizes_reais
+  cat("Raízes reais: ", raizes_reais)
+} else{R <- Mod(raizes[1])
+R
+cat("Raízes complexas com módulo ", R)
+}
+```
+
+```{r}
+tmax = 50
+
+Y = rep(0,tmax)
+C = rep(0,tmax)
+Iindu = rep(0,tmax)
+Iauto = rep(0,tmax)
+I = rep(0, tmax)
+
+Y[1] = 1
+Y[2] = 4
+C[1] = 1
+
+
+for (t in 3:tmax) {
+  C[t] = b*Y[t-1]
+  Iindu[t] = k*(Y[t-1] - Y[t-2])
+  Iauto[t] = A0*(1+g)^t
+  I[t] = Iindu[t] + Iauto[t]
+  Y[t] = C[t] + I[t]
+}
+
+t = seq(1, tmax, 1)
+
+series.dfr = data.frame(t, C, Iindu,Iauto, I, Y)
+
+series_tidy = gather( series.dfr, -t, key = "serie", value = "valor" )
+names(series_tidy)
+
+ggplot(series_tidy, aes(x = t, y = valor, group = serie, color = serie) ) +
+  geom_line(size = 1) + theme_light()
+```
+
+O comportamento da renda nacional :
+
+```{r}
+ggplot(series.dfr, aes(x = t, y = Y)) + geom_point(color = "black") +
+  geom_line() + theme_classic()
+```
+
+
+ 
+
+
+### c) Determine a forma explícita da trajetória temporal para $Y_{t}$ para um conjunto de parâmetros tal que a economia apresente ciclos amortecidos. Utilize o R para realizar os cálculos e apresente a sequência de comandos utilizada;
+
+Resposta :
+
+Para que a economia apresenta ciclos amortecidos é necesário que o determinante seja menor que zero : $\Delta < 0$ et o módulo $R = \sqrt{a_{0}} < 1$.
+
+A teorema de Moivre é dado por : $\lambda_{i} = h \pm v.i$, onde 
+
+$$h= \frac{b+k}{2}, v = \sqrt{\Delta}$$
+
+com as condições que : $\Delta < 0; v \in real$
+```{r}
+set.seed(12345)
+k = 0.1
+b = 0.1
+a0 = k
+a1 = -(b + k)
+a2 = 1
+
+delta = a1^2 - 4*a2*a0
+delta
+
+if (delta >=0){
+  raizes_reais <- Re( raizes )
+  raizes_reais
+  cat("Raízes reais: ", raizes_reais)
+} else{R <- Mod(raizes[1])
+R
+cat("Raízes complexas com módulo ", R)
+}
+```
+
+### d) Considere a abertura da economia hipotética do modelo, tal que as importações $M_{t}$ dependem da renda do período anterior $(M_{t} = m Y_{t-1} ; 0 < m < 1)$. As exportações, determinadas pela demanda externa sofrem variações a uma taxa $g_{x}$ tal que :
+
+$$X_{t} = X_{0} (1+g_{x})^{t}$$
+
+Por simulação, analise a balança de pagamentos $(X_{t} , M_{t})$ no longo prazo. Discuta sobre a condição de estabilidade. Ela foi alterada?;
+
+Resposta :
+
+Vamos reescrever a equação $Y_{t}$, ou seja :
+
+$$Y_{t} - (b+k-m) Y_{t-1} + k Y_{t+2} = A_{0} (1+g)^{t} + X_{0} (1+g_{x})^{t}$$
+
+
+
+
+```{r}
+b = 0.8 
+k = 0.3 
+m = 0.2 # propensao a importar
+A0 = 0.1
+g = 0.02
+X0 = 0.7
+gx = 0.02
+a0 = k
+a1 = -(b + k - m)
+a2 = 1
+
+delta = a1^2 - 4*a2*a0
+delta
+
+if (delta >= 0){
+  raizes_reais <- Re( raizes )
+  raizes_reais
+  cat("Raízes reais: ", raizes_reais)
+} else{R <- Mod(raizes[1])
+R
+cat("Raízes complexas com módulo ", R)
+}
+```
+
+A resposta é positiva, a condição de estabilidade foi alterada. O sistema passa nos ciclos amortecidos. 
+
+```{r}
+tmax = 50
+
+Y = rep(0,tmax)      #produto
+C = rep(0,tmax)      #consumo
+Iindu = rep(0,tmax)   #investimento induzido
+Iauto = rep(0,tmax)   #investimento autonomo
+I = rep(0, tmax)     #investimento total
+X = rep(0,tmax)      #exportação
+M = rep(0,tmax)      #importação
+
+
+Y[1] = 1
+Y[2] = 4 
+C[1] = 1
+X[1] = 3
+M[1] = 3
+
+
+for (t in 3:tmax){ 
+  C[t] = b*(Y[t-1]) 
+  Iindu[t] = k*(Y[t-1] - Y[t-2]) 
+  Iauto[t] = A0*(1+g)^t
+  I[t] = Iindu[t] + Iauto[t] 
+  M[t] = m*Y[t-1] 
+  X[t] = X0*((1+gx)^t) 
+  Y[t] = C[t] + I[t] + (X[t] - M[t]) 
+}
+
+
+t = seq(1, tmax, 1)
+
+series.frame <- data.frame(t, C, Iindu,Iauto, I, M, X, Y)
+series_tidy <- gather( series.frame, -t, key = "serie", value = "valor" )
+
+ggplot(series_tidy, aes(x = t, y = valor, group = serie, color = serie) ) + 
+  geom_line(size=1) + theme_light()
+```
+
+
+
+Análise das condições de estabilidade e de compotamento do balanço de pagamento :
+
+
+Condicão 1: $1-b-k+m+k = 1-b+m > 0$
+
+Condicão 2: $1+b_k-m+k = 1+b+2k-m > 0$
+
+Condicão 3: $k<1$
+
+```{r}
+b = 0.7 
+k = 0.4 
+m = 0.2 
+A0 = 0.1
+g = 0.3
+X0 = 0.7
+gx = 0.02
+a0 = k
+a1 = (b - k + m)
+a2 = 1
+
+condicao1 = 1 + a1 + a0 > 0
+condicao2 = 1 - a1 + a0 > 0
+condicao3 = a0 < 1
+
+condicoes = condicao1 & condicao2 & condicao3
+
+if (condicoes){
+  print("Trajetória estável")
+} else {
+  print("Trajetória instável")
+}
+
+delta = a1^2 - 4*a2*a0
+delta
+
+coeficients = c(a0, a1, a2)
+
+raizes = polyroot(coeficients)
+raizes
+
+if (delta >=0){
+  raizes_reais <- Re( raizes )
+  raizes_reais
+  cat("Raízes reais: ", raizes_reais)
+} else{
+  R <- Mod(raizes[1])
+  R
+  cat("Raízes complexas com módulo ", R)
+}
+```
+O valor do R em módulo é menor que um, então o sistema tem ciclos amortecidos.
+
+
+```{r}
+tmax = 50
+
+X = rep(0,tmax)      #exportação
+M = rep(0,tmax)      #importação
+
+X[1] = 1
+X[2] = 4
+M[1] = 2
+M[2] = 3
+
+
+for (t in 2:tmax){ 
+  M[t] = m*Y[t-1] 
+  X[t] = X0*((1+gx)^t) 
+}
+
+t = seq(1, tmax, 1)
+serie.bp = data.frame(t, M, X)
+head(serie.bp)
+```
+
+```{r}
+serie.pb.gather = gather( serie.bp, -t, key = "serie", value = "valor" )
+names(serie.pb.gather)
+
+ggplot(serie.pb.gather, aes(x = t, y = serie.pb.gather$valor,
+                            group = serie.pb.gather$serie,
+                            color = serie.pb.gather$serie) ) + 
+  geom_line(size = 1) + theme_light()
+
+```
+
+
+### e) Se, considerando o caso anterior alteramos o modelo tal que $M_t = m_1C_t + m_2I_t$, $0<m_1<1;~0<m_2<1$ e $X_t = X_0(1+g_x)^t$. Analise as condições de estabilidade. Há diferença? Auxilie-se com a simulação do modelo.
+
+
+```{r}
+b = 0.9 
+k = 0.6 
+m1 = 0.05
+m2 = 0.01
+a2 = 1 
+a1 = -(b + k-(m1*b)-(m2*k)) 
+a0 = (k-(m2*k)) 
+A0 = 0.1
+X0 = 0.6
+g = 0.02
+gx = 0.03
+
+
+tmax = 50
+
+Y = rep(0,tmax)
+C = rep(0,tmax)
+Iindu = rep(0,tmax)
+Iauto = rep(0,tmax)
+I = rep(0,tmax)
+X = rep(0,tmax)
+M = rep(0,tmax)
+
+Y[1] = 2
+Y[2] = 4 
+C[1] = 2
+X[1] = 3
+M[1] = 3
+
+for (t in 3:tmax) {
+  C[t] = b*Y[t-1]
+  Iindu[t] = k*(Y[t-1] - Y[t-2])
+  Iauto[t] = A0*(1+g)^t
+  I[t] = Iindu[t] + Iauto[t]
+  X[t] = X0*(1+gx)^t
+  M[t] = m1*C[t] + m2*I[t]
+  Y[t] = C[t] + I[t] + X[t] - M[t]
+}
+
+t = seq(1, tmax, 1)
+
+series.frame1 = data.frame(t, Y, C, Iindu, Iauto, X, M)
+
+series_tidy = gather( series.frame1, -t, key = "serie", value = "valor" )
+names(series_tidy)
+
+ggplot(series_tidy, aes(x=t, y = valor, group=serie, color = serie) ) + 
+  geom_line(size = 1) + theme_light()
+```
+
+Positiva, as condições de estabilidade foi alteradas. Portanto, o polinômio característico também mudou. 
+
+```{r}
+serie.frame = data.frame(t,M,X)
+
+pb_painel = gather(serie.frame, -t, key = "serie", value = "valor" )
+names(pb_painel)
+
+ggplot(pb_painel, aes(x=t, y = valor, group=serie, color = serie) ) +
+  geom_line(size=1) + theme_light()
+```
+
+
+
+
+```{r}
+b = 0.9 
+k = 0.6 
+m1 = 0.05
+m2 = 0.01
+a2 = 1 
+a1 = -(b + k-(m1*b)-(m2*k)) 
+a0 = (k-(m2*k)) 
+
+condicao1 = 1 + a1 + a0 > 0
+condicao2 = 1 - a1 + a0 > 0
+condicao3 = a0 < 1
+
+condicoes = condicao1 & condicao2 & condicao3
+
+if (condicoes){
+  print("Trajetória estável")
+} else {
+  print("Trajetória instável")
+}
+
+delta = a1^2 - 4*a2*a0
+delta
+
+coeficients = c(a0, a1, a2)
+
+raizes = polyroot(coeficients)
+raizes
+
+if (delta >=0){
+  raizes_reais <- Re( raizes )
+  raizes_reais
+  cat("Raízes reais: ", raizes_reais)
+} else{
+  R <- Mod(raizes[1])
+  R
+  cat("Raízes complexas com módulo ", R)
+}
+```
+
+\newpage 
+
+## Questão 2: O modelo de ciclo econômico de Kalecki
+
+Simule o modelo de ciclo econômico de Kalecki, considerando um modelo linear de coeficientes constantes de ordem 2. Analise as condições de estabilidade. Para se auxiliar, veja o texto de Possas e Baltar (1983) disponível em http://bibliotecadigital.fgv.br/ojs/index.php/bre/article/view/3154/2050. que resume bem aquilo que é necessário para realizar a simulação. A versão mais simples é suficiente (seção 2.1 desse artigo. A interpretação está na seção 2.2). 
+
+### a) Elabore a descrição do modelo e a representação formal do mesmo (as equações);
+
+Resposta : 
+
+O modelo do Kalecki explica basicamente o mecanismo das flutuações endógenas das economias capitalistas. O modelo considera a influência do nível da renda e da taxa de crescimento do produto sobre as flutuações na atividade econômica. A equação de lucros é dado por :
+
+$$P_{t} = C_{t} + A_{t},$$
+
+onde $A$ é a produção e entrega de bens de investimento, sendo $A_t = I_{t-\theta}$, em que $\theta$ é o período médio de construção e instalação dos equipamentos e $t$ é um período de tempo discreto ($t=1,2,...,n$); $C$ é o consumo dos capitalistas, dado por :
+
+$$C_{t} = B + \lambda P_{t},$$
+
+onde :
+
+$B$ é a parte constante do consumo dos capitalistas e $\lambda$ é constante no curto prazo. $I$ é o investimento bruto (encomendas).
+
+As decisões de investir são dadas pela função: 
+
+$$\frac{I_t}{K_t} = f (\frac {P_t}{K_t}),$$
+
+onde:
+
+$K$ = capital fixo (no início do período), $\frac{p}{k}$ é a rentabilidade real do capital existente ( é tomada como estimativa da rentabilidade esperada do novo capital), . Essa função pode ser reescrita como :
+
+$$\frac{I_t}{K_t} = \phi (\frac{B + A_{t}}{K_{t}})$$
+
+Na forma linear, a função acima pode ser escrita :
+
+$$I_{t} = m (B+A_{t}) - n K_{t}$$
+
+com as condiçoes tais que $m > O$, sendo $\phi$ uma função crescente, e $n > O$ para
+que o modelo comporte a ocorrência de ciclos econômicos.
+
+Em cada período do tempo t, tem se :
+
+$$\Delta K_{t} = K_{t+1} - K_{t} = A_{t} - U$$
+
+A equação do estoque de capital é determinado por :
+
+$$K_{t+2} - (m + 1) K_{t+1} + (m+n) K_{t} = mB + (m - 1) U,$$
+
+Seja uma equação em diferênça de ordem dois. 
+
+### b) Determine as condições de estabilidade do modelo em função dos parâmetros;
+
+Resposta :
+
+A equação em diferênça pode ser escrita como :
+
+$$Y_{t+2} - (m+1) Y_{t+1} + (m+n) Y_{t} = C,$$
+
+onde $a_{1} = -(m+1)$ e $a_{0} = m+n$, são coeficientes. O polinômio característico é :
+
+$$\lambda^{2} - (m+1) \lambda + (m+n) = 0,$$
+
+condição 1 : $1  + (m+n) - (m+1) > 0$
+
+condição 2 : $1 - (m+1) + (m+n) > 0$
+
+condição 3 : $(m+n) < 1$
+
+Para que o sistema seja estável é necessário que $\lambda_{1,2} < 0$, para que occore ciclos: $R = \sqrt{(m+n)} < 0$
+
+Analizando no R :
+
+Caso estável
+
+```{r}
+B = 20
+m = 0.5
+U = 5
+n = 0.4
+L = 0.7
+a2 = 1 
+a1 = -(m + 1) 
+a0 = (m + n)
+
+condicao1 = 1 + a1 + a0 > 0
+condicao2 = 1 - a1 + a0 > 0
+condicao3 = a0 < 1
+
+condicoes = condicao1 & condicao2 & condicao3
+
+if (condicoes){
+  print("Trajetória estável")
+} else {
+  print("Trajetória instável")
+}
+
+delta = a1^2 - 4*a2*a0
+delta
+
+coeficients = c(a0, a1, a2)
+
+raizes = polyroot(coeficients)
+raizes
+
+if (delta >=0){
+  raizes_reais <- Re( raizes )
+  raizes_reais
+  cat("Raízes reais: ", raizes_reais)
+} else{
+  R <- Mod(raizes[1])
+  R
+  cat("Raízes complexas com módulo ", R)
+}
+```
+
+### c) Simule um caso estável e um caso instável.
+
+Resposta :
+
+Caso estável :
+
+
+```{r}
+tmax = 50
+
+P = rep(0, tmax)
+C = rep(0, tmax)
+A = rep(0, tmax)
+K = rep(0, tmax)
+I = rep(0, tmax)
+Y = rep(0, tmax)
+
+K[1] = 2
+I[1] = 2
+C[1] = 2
+
+for (t in 2:tmax){ 
+I[t] = m*(A[t-1]+ B) - n*(K[t-1])
+A[t] = I[t-1]
+C[t] = (L*P[t-1]) + B
+P[t] = A[t]+C[t-1]
+K[t] = A[t]- U +K[t-1]
+}
+
+t = seq(1, tmax, 1)
+
+seriees = data.frame(t, I, A, C, P, K)
+
+series_tidy = gather( seriees, -t, key = "serie", value = "valor" )
+names(series_tidy)
+
+ggplot(series_tidy, aes(x=t, y = valor, group=serie, color = serie) ) +
+  geom_line(size=1) + theme_light()
+```
+
+Caso instável :
+
+Condições de instabilidade :
+
+```{r}
+B = 20
+m = 1.5
+U = 5
+n = 1.4
+L = 0.7
+a2 = 1 
+a1 = -(m + 1) 
+a0 = (m + n)
+
+condicao1 = 1 + a1 + a0 > 0
+condicao2 = 1 - a1 + a0 > 0
+condicao3 = a0 < 1
+
+condicoes = condicao1 & condicao2 & condicao3
+
+if (condicoes){
+  print("Trajetória estável")
+} else {
+  print("Trajetória instável")
+}
+
+delta = a1^2 - 4*a2*a0
+delta
+
+coeficients = c(a0, a1, a2)
+
+raizes = polyroot(coeficients)
+raizes
+
+if (delta >= 0){
+  raizes_reais <- Re( raizes )
+  raizes_reais
+  cat("Raízes reais: ", raizes_reais)
+} else{
+  R = Mod(raizes[1])
+  R
+  cat("Raízes complexas com módulo ", R)
+}
+```
+
+Análise gráfica :
+
+
+```{r}
+tmax = 50
+
+P = rep(0, tmax)
+C = rep(0, tmax)
+A = rep(0, tmax)
+K = rep(0, tmax)
+I = rep(0, tmax)
+Y = rep(0, tmax)
+
+K[1] = 2
+I[1] = 2
+C[1] = 2
+
+for (t in 2:tmax){ #t começa em 3
+I[t] = m*(A[t-1]+ B) - n*(K[t-1])
+A[t] = I[t-1]
+C[t] = (L*P[t-1]) + B
+P[t] = A[t]+C[t-1]
+K[t] = A[t]- U +K[t-1]
+}
+
+t = seq(1, tmax, 1)
+
+seriees = data.frame(t, I, A, C, P, K)
+
+series_tidy = gather( seriees, -t, key = "serie", value = "valor" )
+names(series_tidy)
+
+ggplot(series_tidy, aes(x=t, y = valor, group=serie, color = serie) ) +
+  geom_line(size=1) + theme_light()
+```
+
+
+
+
+

@@ -1,0 +1,389 @@
+---
+title: "Equações em diferenças no R"
+author: "Henri Makika"
+date: "May 14, 2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE)
+```
+
+## Comandos principais para este análise
+
+
+
+```{r}
+suppressMessages(library(ggplot2))
+suppressMessages(library(tidyr))
+```
+
+## Equação em diferença de ordem 2 - o Modelo de Hansen-Samuelson
+
+Em função das hipóteses colocadas, o modelo econômico é dado pelas equações:
+
+$$c_t = bY_{t-1}$$
+$$I_t = k(C_t - C_{t-1})$$
+$$G_t = G > 0$$
+$$Y_t = C_t + T_t - G_t$$
+
+Onde :
+
+$b \epsilon (0,1)$ : propensão marginal a consumir; 
+$k$ : coeficiente de aceleração;
+
+Substituindo as três primeiras equações na última, obtemos uma equação em diferença de ordem 2.
+
+$$Y_t - b(k + 1)Y_{t-1} + bkY_{t-2} = G$$
+
+Podendo assim, analisar o comportamento da renda nacional e por substituição, $C_t$ et $I_t$ 
+
+```{r}
+b = 0.9 # propensao marginal a consumir
+k = 0.5 # acelerador do investimento
+G = 10 # gastos publicos (consumo autonomo)
+tmax = 100
+
+Y <- rep(0, tmax)
+C <- rep(0, tmax)
+Iind <- rep(0, tmax)
+I <- rep(0, tmax)
+
+Y[1] = 1 #rendanacional
+```
+
+## Simulando as quatro equacoes do model
+```{r}
+for (t in 2:tmax){
+  C[t] = b*Y[t-1] 
+  Iind[t] = k*(C[t] - C[t-1])
+  I[t] = Iind[t] + G
+  Y[t] = C[t] + I[t]
+}
+
+t = seq(1, tmax, 1)
+```
+
+Para analisar as séries geradas, fazemos uso de data frames e dos pacotes ggplot2 e tidyr.
+```{r}
+series <- data.frame(t, C, Iind, I, Y)
+series
+series_tidy <- gather( series, -t, key = "serie", value = "valor")
+names(series_tidy)
+```
+
+Gráfico no ggplot :
+```{r}
+ggplot(series_tidy, aes(x = t, y = valor, group = serie, color = serie) ) +
+  geom_line(size = 1) +
+  theme_light()
+```
+
+Vamos fazer agora os cenários. Supondo que $b = 0,5$ et $k = 1.5$ vamos ver essa mudança graficamente.
+```{r}
+b = 0.5 # propensao marginal a consumir
+k = 1.5 # acelerador do investimento
+G = 10 # gastos publicos (consumo autonomo)
+tmax = 100
+
+Y <- rep(0, tmax)
+C <- rep(0, tmax)
+Iind <- rep(0, tmax)
+I <- rep(0, tmax)
+
+Y[1] = 1 #rendanacional
+
+for (t in 2:tmax){
+  C[t] = b*Y[t-1] 
+  Iind[t] = k*(C[t] - C[t-1])
+  I[t] = Iind[t] + G
+  Y[t] = C[t] + I[t]
+}
+
+t = seq(1, tmax, 1)
+
+series <- data.frame(t, C, Iind, I, Y)
+series_tidy <- gather( series, -t, key = "serie", value = "valor")
+names(series_tidy)
+
+ggplot(series_tidy, aes(x = t, y = valor, group = serie, color = serie) ) +
+  geom_line(size = 1) +
+  theme_light()
+```
+
+Supondo ainda que $b = 0.9$ et $k = 2$ :
+```{r}
+b = 0.9 # propensao marginal a consumir
+k = 2 # acelerador do investimento
+G = 10 # gastos publicos (consumo autonomo)
+tmax = 100
+
+Y <- rep(0, tmax)
+C <- rep(0, tmax)
+Iind <- rep(0, tmax)
+I <- rep(0, tmax)
+
+Y[1] = 1 #rendanacional
+
+for (t in 2:tmax){
+  C[t] = b*Y[t-1] 
+  Iind[t] = k*(C[t] - C[t-1])
+  I[t] = Iind[t] + G
+  Y[t] = C[t] + I[t]
+}
+
+t = seq(1, tmax, 1)
+
+series <- data.frame(t, C, Iind, I, Y)
+series_tidy <- gather( series, -t, key = "serie", value = "valor")
+names(series_tidy)
+
+ggplot(series_tidy, aes(x = t, y = valor, group = serie, color = serie) ) +
+  geom_line(size = 1) +
+  theme_light()
+```
+
+## Análise dinâmica
+
+Para realizar a análise dinâmica, precisamos avaliar as raízes do polinômio característico:
+
+$$p(\lambda) = \lambda^2 + a_1\lambda + a_0 = 0$$
+
+Onde :
+$$a_2 = 1$$
+$$a_1 = -b(k + 1)$$
+$$a_0 = bk$$
+
+Lembrando que as condições para uma análise qualitativa são:
+
+$$1+a_1+a_0 > 0$$
+$$1-a_1+a_0 > 0$$
+$$a_0 < 1$$
+
+```{r}
+a2 = 1
+a1 = -b*(k+1)
+a0 = b*k
+
+# analisando as condicoes
+
+cond1 = 1 + a1+a0 >0
+cond2 = 1-a1+a0 >0
+cond3 = a0<1
+conds = cond1 & cond2 & cond3
+
+if (conds){
+  print("Trajetória estável")
+} else {
+  print("Trajetória instável")
+}
+```
+
+## Calcula de discriminante
+```{r}
+coefs = c(a0, a1, a2)
+
+# calculando o discriminante
+
+delta = a1^2 -4*a2*a0
+delta
+```
+
+```{r}
+raizes = polyroot(coefs)
+raizes
+```
+```{r}
+if (delta >=0){
+  raizes_reais <- Re( raizes )
+  raizes_reais
+  cat("Raízes reais: ", raizes_reais)
+} else{
+  R <- Mod(raizes[1])
+  R
+  cat("Raízes complexas com módulo ", R)
+}
+```
+
+## Equações em diferença de ordem superior
+
+Nestes casos a solução é dada pela combinação das soluções de acordo com a natureza de cada raíz.
+
+## Exercício 1
+
+Por exemplo, a equação em diferenças :
+
+$$y_{t+3} - 4y_{t+2} + 4.8y_{t+1} - 1.6y_{t} = 100$$
+
+possuirá três raízes características. Simulando, notamos que a série y t apresenta uma trajetória explosiva não oscilatória e sem ciclos. Logo, as raízes serão reais e positivas e haverá ao menos uma raíz com módulo maior que a unidade.
+
+```{r}
+a3 = 1
+a2 = -4
+a1 = 4.8
+a0 = -1.6
+g = 100
+tmax = 10
+
+y = rep(0, tmax)
+y[1] = 400 # y0
+y[2] = 420 # y1
+y[3] = 450 # y2
+
+for (t in 4:tmax){
+  y[t] = -a2*y[t-1] - a1*y[t-2] - a0*y[t-3] + g
+}
+
+t = seq(1, tmax, 1)
+
+series = data.frame(t, y)
+
+ggplot(series, aes(x = t, y = y)) + geom_line(size = 1, colour = "blue") +
+  theme_minimal()
+```
+
+Analisando as raises
+```{r}
+# analisando as raizes do polnomio caracteristico
+
+coefs<- c(a0, a1, a2, a3)
+raizes <- polyroot( coefs )
+Re(raizes)
+```
+
+```{r}
+if ( any(abs(raizes)>1) ){
+  print("Serie instável")
+} else {
+  print("Serie estável")
+}
+```
+```{r}
+# o steady state
+
+yp = g/(a0 + a1 + a2 + a3)
+yp
+```
+
+Notamos que há duas raízes unitárias, o que torna a série uma série explosiva. Logo, o ponto fixo é um repulsor. A solução explícita será dada pela combinação linear dos termos exponenciais tal que
+
+$$y_{t} = A_{1} . 0.5588^t + A_{2} . 1,4472^t + A_{3} . 2^t + 500$$
+
+E com as três condições iniciais, determinamos as constantes arbitrárias $A_1$ , $A_2$ e $A_3$, por meio do sistema determinado resultante da substituição de $y_0$ , $y_1$ , $y_2$ para $t = 0, 1, 2$ na solução explícita:
+
+```{r}
+lambda1 = Re( raizes[1] )
+lambda2 = Re( raizes[2] )
+lambda3 = Re( raizes[3] )
+
+# t=0
+# A1 + A2 + A3 + yp = y[1]
+# t=1
+# A1*lambda1 + A2*lambda2 + A3*lambda3 + yp = y[2]
+# t=2
+# A1*lambda1^2 + A2*lambda2^2 + A3*lambda3^2 + yp = y[3]
+
+v = c(1, lambda1, lambda1^2, 1, lambda2, lambda2^2, 1, lambda3, lambda3^2)
+A = matrix(v , ncol=3)
+B = y[1:3]-yp
+X = solve(A,B)
+X
+```
+
+## Exercício 2
+
+Em um segundo caso, 
+
+$$y_{t+3} - y_{t+2} - 2y_{t+1} + 2y_{t} = 0$$
+
+temos novamente uma série divergente e sem oscilações nem ciclos, o que indica a presença de raízes reais e ao menos uma raíz unitária.
+
+```{r}
+rm(list=ls(all.names = TRUE))
+a3 =  1
+a2 = -1
+a1 = -2
+a0 = 2
+
+g = 0
+
+tmax = 10
+y = rep(0, tmax)
+
+y[1] = 0
+y[2] = 2
+y[3] = 4 # tentar com 1 ou 4
+
+for (t in 4:tmax){
+  y[t] = -a2*y[t-1] - a1*y[t-2] - a0*y[t-3] + g
+}
+
+t = seq(1, tmax, 1)
+
+series = data.frame(t, y)
+
+ggplot(series, aes(x=t, y=y)) + geom_line(size=1, colour="blue") +
+theme_minimal()
+  
+```
+
+Se mudamos um dos coeficientes, teremos :
+```{r}
+rm(list=ls(all.names = TRUE))
+a3 =  1
+a2 = -1
+a1 = -2
+a0 = 2
+
+g = 0
+
+tmax = 10
+y = rep(0, tmax)
+
+y[1] = 0
+y[2] = 2
+y[3] = 1 # tentar com 1 ou 4
+
+for (t in 4:tmax){
+  y[t] = -a2*y[t-1] - a1*y[t-2] - a0*y[t-3] + g
+}
+
+t = seq(1, tmax, 1)
+
+series = data.frame(t, y)
+
+ggplot(series, aes(x=t, y=y)) + geom_line(size=1, colour="blue") +
+theme_minimal()
+```
+
+Analisando as raises.
+
+```{r}
+# analisando as raizes do polnomio caracteristico
+
+coefs<- c(a0, a1, a2, a3)
+raizes <- polyroot( coefs )
+Re(raizes)
+```
+
+Temos uma raíz com módulo unitário e outras duas raízes com módulo maior que a unidade, além de uma raíz negativa. Logo, pela raíz negativa ser maior que a unidade em módulo, teremos oscilações explosivas. Mas esas oscilaçõse não aparecem no gráfico? Haveria uma explicação? Podemos tentar uma nova simulação, desta vez considerando $y[3] = 1$. Há alguma mudança? Observe os valores das constantes arbitrárias dada essa mudança na condição inicial.
+
+```{r}
+lambda1 = Re( raizes[1] )
+lambda2 = Re( raizes[2] )
+lambda3 = Re( raizes[3] )
+# t = 0
+# A1 + A2 + A3 = y[1]
+
+# t = 1
+# A1*lambda1 + A2*lambda2 + A3*lambda3 = y[2]
+
+# t = 2
+# A1*lambda1^2 + A2*lambda2^2 + A3*lambda3^2 = y[3]
+
+v = c(1, lambda1, lambda1^2, 1, lambda2, lambda2^2, 1, lambda3, lambda3^2)
+A = matrix(v , ncol=3)
+B = y[1:3]
+X = solve(A,B)
+X # constantes arbitrarias A1, A2 e A3
+```

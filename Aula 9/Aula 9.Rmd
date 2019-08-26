@@ -1,0 +1,214 @@
+---
+title: "Sistemas de equações em diferenças Cournot e Markov"
+author: "Henri Makika"
+date: "Junho 4, 2019"
+output:
+  pdf_document:
+    toc: yes
+  html_document:
+    df_print: paged
+    toc: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = TRUE,
+                      fig.width = 12, fig.height = 8)
+```
+
+## Simulação: Oligopólio de Cournot
+
+Sejam *n* as firmas em um mercado oligopolístico de produto homogêneo, em que as firmas são maximizadoras de lucro, com curvas de demanda e custos lineares tal que a elasticidade preço da demanda e os custos marginais são constantes.
+A curva de demanda:
+
+$$p_{t} = a-b \sum_{i=1}^{n} x_{it}$$
+
+onde $x_{it}$ é a produção da i ésima firma no período t; $a, b > 0$. A
+curva linear de custos é tal que :
+
+$$C_{it} = d + c_{i} x_{it}$$
+
+em que $d, c_i > 0$.
+
+
+
+
+```{r}
+library(matlib)
+library(ggplot2)
+library(tidyr)        
+```
+
+## 
+
+
+
+```{r}
+set.seed(10)
+n = 2;
+a = 10
+b = 0.5
+d = 10
+
+c = runif(n, 0, 1)
+tmax = 20
+X = matrix(0,n, tmax)
+X[,1] = 10*runif(n, 0, 1)
+
+B = (a-c)/2*b
+
+A = matrix(-0.5, n, n)
+A = A + diag(0.5, n, n)
+A
+```
+
+
+
+```{r}
+# Autovalores
+lambda = eigen(A)$values
+lambda
+```
+
+Os autovalores para $n = 2$ são os esperados, e por tanto, temos um sistema estável, com oscilações amortecidas e convergindo a um steady state dado por
+
+$$x_{it+1} = x_{it} = x_{i}*$$
+
+
+```{r}
+I = diag(1, n, n)
+Xeq = inv(I-A)%*%B
+Xeq
+```
+
+Simulando as trajetórias:
+
+```{r}
+for (t in 2:tmax){
+  X[ ,t] = A %*% X[ , t-1] + B
+}
+x = t(X) # transposta
+series = as.data.frame(x)
+series$t = seq(1, tmax, 1)
+head(series)
+```
+
+
+```{r}
+series_tidy = gather(series, -t, key="serie", value="valor")
+
+plot_series = ggplot(series_tidy, aes(x = t, y = valor, color = serie)) +
+  geom_line() +
+  theme_light()
+plot_series
+```
+
+Pour sauver le graphique
+
+
+```{r}
+#ggsave("series_duopolio.png", plot_series, width = 5, height = 3, units = "in")
+#getwd()
+```
+
+### Cadeias de Markov
+
+Resolvendo o exercício do slide, temos a seguinte matriz de transição:
+
+
+```{r}
+#coefs <-  matrix(c(3, 2, 0,0,0, 1, 5, 5, 0, 0, 0, 1, 8, 7, 5, 0, 0, 4, 16, 32, 0, 0, 0, 11, 100), 
+                 #nrow = 5, ncol = 5)
+#print(coefs)
+
+# On peut aussi écrire 
+coefs = c(3, 2, 0,0,0, 1, 5, 5, 0, 0, 0, 1, 8, 7, 5, 0, 0, 4, 16, 32, 0, 0, 0, 11, 100)
+n_states = 5
+S <- matrix(coefs, n_states)
+S
+```
+
+
+```{r}
+total_2005 <- rowSums(S)
+total_2005
+```
+
+### Construindo a matriz de transicao
+
+```{r}
+A = S/total_2005
+A
+```
+
+```{r}
+rowSums(A)
+```
+
+Analisando as raízes do sistema dinâmico :
+
+
+$$X_{t+1} = A.X_{t}$$
+
+para analisar a dinamica basta olhar para os autovalores
+
+
+```{r}
+eigen(A)$value
+```
+
+
+raizes da matriz de transicão. Temos que todas as raízes são menores o iguais a um em módulo, e que todas asraízes são positivas. Logo, não haverá oscilações, mas a raíz unitária não permite atingir o steady state no longo prazo. Considerando as probabilidades de transição constantes, podemos estimar a nova estrutura produtiva para os anos de 2010 e 2015:
+
+```{r}
+total_2010 = colSums(S)
+total_2010
+```
+
+
+```{r}
+total_2015 <- round(A%*%total_2010)
+total_2015
+```
+
+```{r}
+total_2020 <- round(A%*%total_2015)
+total_2020
+```
+
+Simulando para um t longo:
+
+```{r}
+tmax = 100
+X = matrix(0, n_states, tmax)
+X[, 1] = total_2020
+for (t in 2:tmax){
+  #X[, t] = round(A %*% X[, t-1] )
+  X[, t] = A %*% X[, t-1]
+}
+
+series = as.data.frame( t(X))
+series$t = seq(1, tmax, 1)
+series_tidy = gather(series, -t, key="serie", value="valor")
+
+ggplot(series_tidy, aes(x = t, y = valor, color = serie)) +
+  geom_line() +
+  theme_light()
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

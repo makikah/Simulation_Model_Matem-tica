@@ -1,0 +1,328 @@
+---
+title: "Analyse avec RStudio"
+author: "Henri Makika"
+date: "April 28, 2019"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Listes et Tableaux de données
+
+```{r}
+L1 = list(1:6, "abc")
+print(L1)
+```
+```{r}
+length(L1)
+```
+La longueur d’une liste correspond aux nombres d’éléments qu’elle contient et s’obtient avec length. 
+
+Comme les vecteurs, une liste peut être nommées et les noms des éléments d’une liste accessibles avec names :
+```{r}
+L2 <- list(minuscules = letters, majuscules = LETTERS, mois = month.name)
+print(L2)
+```
+```{r}
+L = list(L1, L2)
+print(L)
+```
+Cela est plus lisible si l’on fait appel à la fonction str qui permet de visualiser la
+structure d’un objet.
+```{r}
+str(L)
+```
+## Tableaux de données
+
+Dans R, les tableaux de données sont tout simplement des listes avec quelques propriétés spéficiques :
+• les tableaux de données ne peuvent contenir que des vecteurs ;
+• tous les vecteurs d’un tableau de données ont la même longueur ;
+• tous les éléments d’un tableau de données sont nommés et ont chacun un nom unique.
+
+On peut créer un tableau de données avec la fonction data.frame :
+```{r}
+df <- data.frame(sexe = c("fe", "fe", "ho", "ho"), age = c(52, 31, 29, 35), 
+                 blond = c(FALSE, TRUE, TRUE, FALSE))
+print(df)
+```
+```{r}
+str(df)
+```
+De plus, tout comme les colonnes ont un nom, il est aussi possible de nommer les lignes avec row.names :
+```{r}
+row.names(df) <- c("Henriette", "Bertine", "Jonas", "Benedict")
+print(df)
+```
+## Afficher les données
+```{r}
+mtcars
+d <- mtcars
+View(d)
+```
+Les fonctions head et tail , qui marchent également sur les vecteurs, permettent d’afficher seulement les premières (respectivement les dernières) lignes d’un tableau de données :
+```{r}
+head(d)
+```
+```{r}
+tail(d)
+```
+```{r}
+library(dplyr)
+glimpse(d)
+```
+La méthode summary qui fonctionne sur tout type d’objet permet d’avoir quelques statistiques de base sur les différentes variables de notre tableau, les statistiques affichées dépendant du type de variable.
+```{r}
+summary(d)
+```
+On peut également appliquer summary à une variable particulière.
+```{r}
+summary(d$mpg)
+```
+Convertir un data.frame en data.table
+Il suffit d’avoir recours à la fonction as.data.table 
+```{r}
+library(data.table)
+iris2 <- as.data.table(iris)
+class(iris2)
+```
+```{r}
+class(iris)
+```
+```{r}
+library(dtplyr)
+iris_dt <- tbl_dt(iris)
+class(iris_dt)
+```
+La syntaxe des crochets change radicalement avec data.table. Elle est de la forme objet[i, j, by] (dans sa forme la plus simple, pour une présentation exhaustive, voir le fichier d’aide de data.table-package ).
+```{r}
+iris2[Sepal.Length < 5]
+```
+Pour sélectionner une variable, il suffit d’indiquer son nom dans la seconde partie, à savoir j . Noter la virgule qui permets d’indiquer que c’est une condition sur j et non sur i .
+```{r}
+iris2[, Sepal.Length]
+```
+Pour sélectionner plusieurs variables, on fournira une liste définie avec list (et non un vecteur défini avec c).
+```{r}
+iris2[, list(Sepal.Length, Sepal.Width)]
+```
+## Statistique bivariée
+```{r}
+library(questionr)
+data(hdv2003)
+d <- hdv2003
+data(rp99)
+```
+## Deux variables quantitatives
+
+On peut ainsi représenter les valeurs du nombre d’heures passées devant la télévision selon l’âge.
+```{r}
+plot(d$age, d$heures.tv)
+```
+
+Le fait que des points sont superposés ne facilite pas la lecture du graphique. On peut utiliser une représentation avec des points semi-transparents.
+```{r}
+plot(d$age, d$heures.tv, pch = 19, col = rgb(1, 0, 0, 0.1))
+```
+
+Plus sophistiqué, on peut faire une estimation locale de densité et représenter le résultat sous forme de «carte». Pour cela, le package MASS va nous aider :
+```{r}
+library(MASS)
+tmp <- d[, c("age", "heures.tv")]
+tmp <- tmp[complete.cases(tmp), ]
+filled.contour(kde2d(tmp$age, tmp$heures.tv), color = terrain.colors)
+```
+
+Une représentation alternative de la densité locale peut être obtenue avec la fonction smoothScatter.
+```{r}
+smoothScatter(d[, c("age", "heures.tv")])
+```
+
+Calculons le coefficient de corrélation de ces deux variables :
+```{r}
+cor(d$age, d$heures.tv, use = "complete.obs")
+```
+
+L’option use permet d’éliminer les observations pour lesquelles l’une des deux valeurs est manquante. Le coefficient de corrélation est très faible.
+```{r}
+plot(rp99$dipl.sup, rp99$cadres, ylab = "Part des cadres", xlab = "Part d
+es diplomês du supérieur")
+```
+
+Ça ressemble déjà beaucoup plus à une relation de type linéaire.
+Calculons le coefficient de corrélation :
+```{r}
+cor(rp99$dipl.sup, rp99$cadres)
+```
+
+Effectuons alors la regression linéaire pour nos deux variables.
+```{r}
+reg <- lm(cadres ~ dipl.sup, data = rp99)
+summary(reg)
+```
+
+On remarque que nos variables sont statistiquement significatives. La part de cadres augmente
+donc avec celle de diplômés du supérieur.
+```{r}
+plot(rp99$dipl.sup, rp99$cadres, ylab = "Part des cadres", xlab = "Part des diplômés du supérieur")
+```
+
+## Une variable quantitative et une variable qualitative
+
+## Représentations graphiques
+```{r}
+d.hard <- subset(d, hard.rock == "Oui")
+d.non.hard <- subset(d, hard.rock == "Non")
+boxplot(d.hard$age, d.non.hard$age)
+```
+```{r}
+boxplot(age ~ hard.rock, data = d)
+```
+```{r}
+par(mfrow = c(1, 2))
+hist(d$age[d$hard.rock == "Oui"], main = "Hard rock", col = "red")
+hist(d$age[d$hard.rock == "Non"], main = "Sans hard rock", col = "red")
+```
+
+## Introduction à ggplot2, la grammaire des graphiques
+
+R possède un puissant moteur graphique interne, qui permet de «dessiner» dans un graphique en y
+rajoutant des segments, des points, du texte, ou toutes sortes d’autres symboles. Toutefois, pour produire un graphique complet avec les fonctions basiques de R, il faut un peu bricoler : d’abord, ouvrir une fenêtre ; puis rajouter des points ; puis rajouter des lignes ; tout en configurant les couleurs au fur-et-à-mesure ; puis finir par fermer la fenêtre graphique.
+
+### Exemple
+
+En 2010, les chercheurs Carmen M. Reinhart et Kenneth S. Rogoff publiaient un article intitulé *Growth in a Time of Debt*, dans lequel ils faisaient la démonstration qu’un niveau élevé de dette publique nuisait à la croissance économique. Plus exactement, les deux chercheurs y défendaient l’idée que, lorsque la dette publique dépasse 90 % du produit intérieur brut, ce produit cesse de croître.
+
+Cette conclusion, proche du discours porté par des institutions comme le Fonds Monétaire International, *a alimenté plusieurs argumentaires politiques*. Des parlementaires américains s’en ainsi sont servi pour exiger une diminution du budget fédéral, et surtout, la Commission européenne s’est appuyée sur cet argumentaire pour exiger que des pays comme la Grèce, durement frappés par la crise financière globale de 2008, adoptent des plans d’austérité drastiques.
+
+Or, en tentant de reproduire les résultats de Reinhart et Rogoff, les chercheurs Thomas Herndon, Michael Ash et Robert Pollin y *ont trouvé de nombreuses erreurs*, ainsi qu’une bête erreur de calcul due à une utilisation peu attentive du logiciel Microsoft Excel. La révélation de ces erreurs donna lieu à un débat très vif entre adversaires et partisans des politiques économiques d’austérité, débat toujours autant d’actualité aujourd’hui.
+```{r}
+# charger l'extension lisant le format CSV
+library(readr)
+library(dplyr)
+library(ggplot2)
+```
+
+Les données de Reinhart et Rogoff contiennent, pour un échantillon de 20 pays occidentaux membres de la zone OCDE, la croissance de leur produit intérieur brut (PIB), et le ratio entre leur dette publique et ce produit, exprimé sous la forme d’un pourcentage «Dette/PIB». Les données vont du milieu des années 1940 à la fin des années 2000. La première colonne du jeu de données ne contenant que les numéros des lignes, on va la supprimer d’entrée de jeu :
+
+```{r}
+# suppression de la première colonne
+debt <- read_csv("~/Videos/Unicamp_IE 2019/HO:012A Economia Matemática/debt.csv")
+debt <- debt[, -1]
+print(debt)
+```
+
+Il faut aussi noter d’emblée que certaines mesures sont manquantes : pour certains pays, on ne dispose pas d’une mesure fiable du PIB et/ou de la dette publique. En conséquence, le nombre d’observations par pays est différent, et va de 40 observations «pays-année» pour la Grèce à 64 observations «pays-année» pour plusieurs pays comme l’Australie ou les États-Unis :
+```{r}
+table(debt$Country)
+```
+
+## Recodage d’une variable
+
+Dernière manipulation préalable avant l’analyse : on va calculer la décennie de chaque observation, en divisant l’année de mesure par 10, et en multipliant la partie entière de ce résultat par 10. Cette manipulation très simple donne «1940» pour les mesures des années 1940 à 1949, «1950» pour les années 1950-1959, et ainsi de suite.
+```{r}
+debt$Decade <- factor(10 * debt$Year%/%10)
+```
+Voici comment représente nos données:
+```{r}
+head(debt)
+```
+
+## Visualisation des données
+
+Procédons désormais à quelques visualisations très simples de ces données. On dispose de trois variables continues : l’année, le taux de croissance du PIB, et le ratio «Dette publique/PIB».
+```{r}
+with(debt, plot(Year, growth))
+```
+Le même graphique s’écrit de la manière suivante avec l’extension ggplot2 :
+```{r}
+with(debt, qplot(Year, growth))
+```
+
+```{r}
+qplot(Year, growth, data = debt, geom = "line" ) +
+  facet_wrap(~ Country)
+```
+
+## Combinaisons d’éléments graphiques
+
+On n’a pas encore visualisé le ratio «Dette publique / PIB», l’autre variable du raisonnement de Reinhart et Rogoff. C’est l’occasion de voir comment rajouter des titres aux axes des graphiques, et d’utiliser les lignes en même temps que des points, toujours grâce à l’argument geom , qui peut prendre plusieurs valeurs (ici, "point" produit les points et "line" produit les lignes) :
+```{r}
+qplot(data = debt, y = ratio, x = Year, geom = c("line", "point")) + facet_wrap(~ Country) +
+labs(x = NULL, y = "Ratio dette publique/produit intérieur brut (%)\n")
+```
+
+## Composition graphique avec ggplot2
+
+La section précédente a montré comment utiliser la fonction qplot (quick plot). La syntaxe complète de l’extension ggplot2 passe par une autre fonction, ggplot , qui permet de mieux comprendre les différents éléments de sa grammaire graphique. Dans cette section, on va détailler cette syntaxe pour en tirer un graphique plus complexe que les précédents.
+```{r}
+p <- ggplot(data = debt, aes(y = growth, x = ratio))
+```
+
+Aucun graphique ne s’affiche ici : en effet, ce que l’on a stocké, dans l’objet p , n’est pas un graphique complet, mais une base de travail. Cette base définit les coordonnées x et y du graphique dans l’argument aes (aesthetics). Ici, on a choisi de mettre la variable dépendante de Reinhart et Rogoff, growth (le taux de croissance du PIB), sur l’axe y , et la variable indépendante ratio (le ratio «Dette publique / PIB») sur l’axe x .
+
+Rajoutons désormais un objet géométrique, geom_point , qui va projeter, sur le graphique, des points aux coordonnées précédemment définies, et divisons le graphique par un «petit multiple», en projetant les points de chaque décennie dans une facette différente du graphique. Ce graphique propose une décomposition temporelle de la relation étudiée par Reinhart et Rogoff :
+```{r}
+p + geom_point() + facet_grid(. ~ Decade)
+```
+
+```{r}
+p + geom_point() + facet_grid(. ~ Decade) + 
+  scale_x_continuous(breaks = seq(0, 200, by = 100))
+```
+
+On va donc les sauvegarder dans l’objet p , de manière à continuer de construire notre graphique en incluant ces différents éléments.
+```{r}
+p <- p + geom_point() + facet_grid(. ~ Decade) +
+scale_x_continuous(breaks = seq(0, 200, by = 100))
+```
+
+## Couleurs et échelles
+
+Abordons désormais un élément-clé de ggplot2 : la manipulation des paramètres esthétiques.
+Précédemment, on n’a montré que deux de ces paramètres : x et y , les coordonnées du graphique.
+Mais ces paramètres peuvent aussi influencer la couleur des points de notre graphique comme le montre l’exemple suivant :
+```{r}
+p + aes(color = ratio < 90)
+
+p + aes(color = ratio < 90) + scale_colour_brewer(palette = "Set1")
+```
+
+```{r}
+p <- p + aes(color = ratio < 90) + scale_color_brewer("", palette = "Set1",
+labels = c("ratio > 90", "ratio < 90"))
+```
+
+Dans le bloc de code ci-dessus, on a stocké l’ensemble de nos modifications dans l’objet p , sans l’afficher; en effet, on souhaite encore procéder à une dernière modification, en rajoutant une régression locale à travers les points de chaque facette.
+```{r}
+p + geom_smooth(method = "loess", se = FALSE, size = 1, color = "black")
+```
+
+Le graphique permet d’évaluer de manière encore un peu plus précise l’argument de Reinhart et Rogoff, et en particulier la nature pas si «fatidique» du seuil de 90% du ratio “Dette publique/PIB”, qui sans être une bonne nouvelle pour l’économie, ne détermine pas «fatidiquement» la direction du taux de croissance : si c’était le cas, toutes les courbes du graphique ressembleraient à celles des années 2000. Autrement dit, l’argumentaire de Reinhart et Rogoff laisse clairement à désirer.
+```{r}
+ggplot(data = debt, aes(y = growth, x = ratio)) + geom_point(color = "grey50") +
+geom_vline(xintercept = 90, lty = "dotted") + geom_smooth(method = "loess", size = 1, 
+                                                          color = "black", se = FALSE) +
+scale_x_continuous(breaks = seq(0, 200, by = 100)) + facet_grid(. ~ Decade) +
+labs(y = "Taux de croissance du produit intérieur brut\n",
+x = "\nRatio dette publique/produit intérieur brut (%)",
+title = "Données Reinhart et Rogoff corrigées, 1946-2009\n") + theme_bw() +
+theme(strip.background = element_rect(fill = "grey90", color = "grey50"),
+strip.text = element_text(size = rel(1)), panel.grid = element_blank())
+```
+
+L’extension de *ggplot* permet de produire plusieurs types des graphiques dès que l’on connaît les principaux éléments de sa syntaxe, par exemple, **boxplot**.
+```{r}
+ggplot(data = debt, aes(x = ratio > 90, y = growth)) + geom_boxplot() +
+scale_x_discrete(labels = c("< 90", "90+")) + facet_grid(. ~ Decade) +
+labs(y = "Taux de croissance du produit intérieur brut\n",
+x = "\nRatio dette publique/produit intérieur brut (%)",
+title = "Données Reinhart et Rogoff corrigées, 1946-2009\n") + theme_linedraw() +
+theme(strip.text = element_text(size = rel(1)), panel.grid = element_blank())
+```
+
+# Graphiques univariés et bivariés avec ggplot2

@@ -1,0 +1,164 @@
+---
+title: "Aula 6"
+author: "Henri Makika"
+date: "April 30, 2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Solução do Exercício 1
+
+## Carregar os pacotes
+
+```{r}
+library(matlib)
+library(MASS)
+library(limSolve)
+library(ggplot2)
+```
+```{r}
+# Exercicio 1
+# p(x) = x_t -3*x_t-1 + 2*Xt-2
+```
+```{r}
+n = 10 # numero de iteracoes - periodos de tempo
+y = rep(0, n) # serie a gerar
+y[1] = 1 # condicoes iniciais
+y[2] = -2
+
+a2 = 1
+a1 = -3
+a0 = 2
+coefs = c(a0, a1, a2)
+
+roots <- polyroot( coefs )
+roots
+```
+
+#zapsmall(roots)
+
+# calculando o discriminante
+```{r}
+delta = a1^2 -4*a2*a0
+delta
+
+if (delta > 0) {
+  print("Raíses reais e diferentes")
+  
+  lamda1 = Re(roots[1])
+  lamda2 = Re(roots[2])
+  
+  # y[t] = A1*lamda1^t + A2*lamda2^t
+  # y0 = A1 + A2
+  # y1 = A1*lamda1 + A2*lamda2
+  
+  A = matrix(c(1, lamda1, 1, lamda2), 2)
+  B = c(y[1], y[2])
+  X = ginv(A) %*% B
+  X
+  
+  A1 = X[1]
+  A2 = X[2]
+  
+  for (t in 3:n){
+    y[t] = A1*lamda1^t + A2*lamda2^t
+  }
+}
+
+series = data.frame(t = 1:n, y)
+
+ggplot(series, aes(x = t, y = y)) + geom_point(color = "black") +
+geom_line(color = "Royalblue") + theme_classic()
+```
+
+# Equação em diferenças com raízes reais e iguais
+```{r}
+a2 = 1
+a1 = -6
+a0 = 9
+
+y = rep(0, n) # serie a gerar
+y[1] = 1 # condicoes iniciais
+y[2] = 3
+
+coefs = c(a0, a1, a2)
+delta = a1^2 -4*a2*a0
+delta
+```
+```{r}
+roots <- polyroot( coefs )
+roots
+```
+
+```{r}
+if (delta==0) {# raizes reais e iguais
+print('Caso 2: Raízes reais e iguais')
+lambda=Re(roots[1])
+# identificando as constantes arbitrarias
+# yt = A1*lambda1^t+a2*t*lambda2^t
+# identificando as constantes arbitrarias
+A1 = y[1]
+A2 = y[2]/lambda-A1
+for (t in 3:n){
+  y[t] = A1*lambda^t + A2*t*lambda^t # trajetoria temporal
+} # end for
+} # end if
+```
+```{r}
+series = data.frame(t=1:n, y)
+
+ggplot(series, aes(x = t, y = y)) + geom_point(color = "black") + 
+  geom_line(color = "Royalblue") + theme_classic()
+```
+
+# O caso de raízes complexas
+
+Precisamos de utilizar Euler e Moivre para reescrever a solução homogênea.
+```{r}
+#n = 50
+a2 = 1
+a1 = -1
+a0 = 5/4
+
+y = rep(0, n) # serie a gerar
+y[1] = 1 # condicoes iniciais
+y[2] = 3
+
+coefs = c(a0, a1, a2)
+delta = a1^2 -4*a2*a0
+delta
+```
+```{r}
+roots <- polyroot( coefs )
+roots
+```
+
+```{r}
+R = Mod(roots[1])
+theta = Arg(roots[1])
+
+# identificando constantes
+# yt = R^t*(A3*cos(theta*t) + A4*sin(theta*t))
+# y0 = A3
+# y1 = R*(A3*cos(theta) + A4*sin(theta))
+# y1 = A3*R*cos(theta) + A4*R*sin(theta)
+
+A = matrix(c(1, R*cos(theta), 0, R*sin(theta)), 2 )
+B = c(y[1], y[2])
+X = ginv(A) %*% B
+A3 = X[1]
+A4 = X[2]
+
+for (t in 3:n){
+  y[t] = R^t *(A3*cos(theta*t) + A4*sin(theta*t))
+}
+
+series = data.frame(t = 1:n, y = y)
+
+ggplot(series, aes(x = t, y = y)) + geom_point() + geom_line() +
+  theme_classic()
+```
+

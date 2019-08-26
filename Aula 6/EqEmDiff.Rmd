@@ -1,0 +1,55 @@
+---
+title: "Équation En Différence"
+author: "Henri Makika"
+date: "May 1, 2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Équation en différence d'ordre 2
+
+### Packages importants pour résoudre ce problème
+
+```{r}
+library(limSolve)
+library(deSolve)
+```
+
+## Exercice 1
+
+```{r}
+def = function(t, state, parameters) {
+  with(as.list(c(state, parameters)), {
+    M = sqrt(1/3*(1/2*dy^2 + 1/2*y^2))
+    dz = M*z # dz/dt
+    ddy = -3*M*dy - y # ddy/dt
+    
+    list(c(dy, ddy, dz))
+  })
+}
+
+state = c(y = 1, dy = -0.1, z = 1)
+
+times = seq(0, 100, length.out = 10001)
+sol = ode(func = def, y = state, times = times, parms = NULL)
+
+y = sol[, "y"]
+dy = sol[, "dy"]
+z = sol[, "z"]
+
+M = sqrt(1/3*(1/2*dy^2 + 1/2*y^2))
+
+plot(times, z, col = "red", ylim = c(-1, 18), type = "l")
+lines(times, y, col = "blue")
+lines(times, M, col = "green")
+grid()
+```
+
+## Exercice 2
+
+Soit l'équation suivante:
+
+${z}''-\mu(1-z^{2}){z}' + z = 0 ; {z}'' = y_1^'$

@@ -1,0 +1,390 @@
+---
+title: |
+  |
+  | State University of Campinas - UNICAMP  
+  |
+  |
+  |
+  | **Regras de Política Econômica e Gasto do Governo: Uma Abordagem Algorítmica**
+  |
+  |  *Ensaio : Economia Matemátia e Simulação*
+  |
+  |
+  | Supervisora: Ivette Luna
+  |
+  |
+author: |
+  | ------------------------------------------------
+  | Henri Makika (211042)
+  | ------------------------------------------------
+
+
+date: "Agusto 12, 2019"
+output: pdf_document
+fontsize: 12pt
+---
+\begin{center}
+\includegraphics[width=50mm]{logo-unicamp-name-line-blk-red-0240.eps}
+\end{center}
+
+\newpage 
+
+\tableofcontents
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE,
+                      fig.width = 10, fig.height = 6)
+```
+
+## Resumo
+
+A política fiscal é alterada uma vez por ano; como uma melhoria potencial, este trabalho examina o uso de regras de controle de *feedback* para a política fiscal. Em particular, calculamos regras de política de *feedback* linear de tal forma que níveis-alvo predeterminados para o PIB e a dívida pública sejam simultaneamente, exatamente rastreados. Realizamos uma série de simulações para examinar os efeitos de diferentes taxas de resposta de políticas e a eficácia geral da metodologia proposta. Esta proposta é tirado no texto de Ilias Kostarakos e Stelios Kotsios (2017), o objetivo é avaliar a dinâmica sob deteminados parâmetros para realizar alguns scenários. 
+
+\newpage
+
+## 1 Introdução 
+
+Economistas pensam em política fiscal através dos olhos de contadores com mudanças anuais nos orçamentos. No entanto, seria benéfico se preferem ver os gastos do governo com o tipo de políticas de *feedback* automático discutidas pela Orszag (2011). Curiosamente, os economistas, já fizeram essa mudança em relação à política monetária ao incorporar a *regra de Taylor*. Essa regra, batizada em homenagem a John B. Taylor, da Universidade de Stanford, exige o ajuste das taxas de juros trimestral ou mensal, em função das taxas de desemprego e inflação. Se o desemprego aumenta, a regra de Taylor indica que as taxas de juros devem ser reduzidas ligeiramente para estimular a economia. Se a inflação subiu, as taxas de juros devem ser ajustadas para cima para desacelerar a economia, Taylor (1993).
+
+No entanto, ainda os economistas não pensam em política fiscal como uma regra de *feedback*. Isso ocorre, apesar de fato de que a analogia entre política monetária e fiscal é simples. Considere os gastos do governo. Também pode ser visto como uma função de *feedback* do desemprego e da inflação. Conforme discutido por Kendrick e Amman (2011), quando o desemprego sobe, as despesas do governo aumentariam e, quando a inflação sobe, as despesas do governo seriam reduzidas.
+
+Essa mudança de uma perspectiva contábil para uma perspectiva de *feedback* exigiria outra mudança técnica em analise. Precisam separar a variável despesa do governo em modelos macroeconômicos em duas partes. A primeira parte é a aprovação de legislação pelo Congresso autorizando mudanças nos níveis de despesa e a segunda parte é o pagamento pelo governo para compras de bens e serviços. A primeira parte pode ser chamada de *autorização* e a segunda parte, *desembolsos*. A autorização ocorre na data em que o presidente assina a legislação de apropriação após a aprovação pelo Congresso. O desembolso ocorre na data em que aqueles que fornecem os bens e serviços recebem pagamento do governo. Existem defasagens importantes do tipo considerado por Blinder associado a cada uma dessas partes.
+
+A partir da crise de 2008, tem havido muita discussão com foco em projetos para reduzir o atraso no desembolso. No entanto, muito menos atenção foi dada ao atraso da autorização, lançando política fiscal em um quadro de *feedback*. Considere um modelo macroeconômico simples que (i) tenha apenas a produção e a inflação como indicadores do desempenho da economia e (ii) inclua o princípio acelerador de investimento de Samuelson. Tal modelo poderia, por exemplo, incluir a política fiscal na forma de autorizações de gasto do governo e política monetária na forma da taxa de juros (ver de Chow, 1967 e Abel, 1975) . A aplicação da metodologia da teoria de controle a um modelo trimestral com essa estrutura produziria uma regra de *feedback* na qual as autorizações e a taxa de juros são funções de produção e emprego. No entanto, em vez de as autorizações serem alteradas uma vez por ano, como é a prática atual, os resultados do modelo indicariam que eles deveriam ser alterados a cada trimestre, Kendrick e Amman (2014).
+
+Para isso, queremos projetar regras de política de *feedback* linear para os instrumentos de política fiscal disponíveis, de modo que sequências predeterminadas (fixas) desejadas para as metas da política sejam rastreadas simultaneamente. Em particular, assumimos que o formulador de políticas tem à sua disposição dois instrumentos: gastos relacionados à remuneração de funcionários do setor público, benefícios sociais etc. e gastos relacionados a projetos de investimento, financiado pelo governo.
+
+## 2 Aplicação de política fiscal
+
+Como dito na introdução, um dos objetivos mais importantes da política econômica é assegurar, por meio da manipulação apropriada dos instrumentos de política disponíveis (variáveis de controle), que o sistema econômico rastreie, tanto quanto possível, um caminho desejado para as metas da política (produtos). Uma das abordagens que tem sido utilizada na literatura relevante para o desenho de política econômica é a abordagem de *feedback*, oriunda da teoria do controle matemático. Vários aspectos da metodologia de *feedback* têm sido utilizados para fins de elaboração de políticas há mais de 50 anos, começando com o uso de controladores PIB no artigo seminal de Phillips (1954). Esses aspectos variam desde o controle de *feedback* ótimo (estocástico) (ver, entre outros, Amman e Kendrick (2003), Christodoulakis e Levine (1987), Christodoulakis e Van Der Ploeg (1987)) até não-lineares (Athanasiou et.al. (2008), Athanasiou e Kotsios (2008), Kotsios e Leventidis (2004)) e aplicações de controle estocástico (Dassios et al. (2014)).
+
+A importância das regras de políticas de *feedback* para o desenho de políticas é evidente pelo fato de que, por mais de 20 anos, as decisões de política monetária foram, em grande parte, baseadas na regra de Taylor (ver Taylor, 1993); essa é uma regra de política de *feedback* linear que estipula (em sua forma mais simples) que a taxa de juros é definida com base em desvios da inflação e do PIB a partir dos níveis de inflação alvo e do PIB potencial, respectivamente; assim, por exemplo, se o PIB exceder o nível de pleno emprego, então as taxas de juros nominais precisam ser aumentadas.
+
+Uma das vantagens de adotar a estrutura de *feedback* é que ela permite explicitamente levar em conta as defasagens associadas à condução da política econômica, uma vez que elas podem ser incorporadas à dinâmica do modelo e à regra de política de feedback (Kendrick, 1988). Mais importante ainda, a metodologia de *feedback* permite intervenções mais frequentes (e possivelmente menores) por parte do formulador de políticas, o que provavelmente resultará em um caminho de transição mais suave para a economia (ver Kendrick e Amman, 2014 e Kendrick and Shoukry, 2014).
+
+Neste ensaio, queremos projetar regras de política de *feedback* linear para os instrumentos de política fiscal disponíveis, de modo que sequências predeterminadas (fixas) desejadas para as metas da política (níveis do PIB e da dívida pública) sejam rastreadas simultaneamente. Em particular, assumimos que o formulador de políticas tem à sua disposição dois instrumentos: gastos relacionados à remuneração de funcionários do setor público, benefícios sociais etc. (ou seja, gastos que cobrem consumo individual e coletivo) e gastos relacionados a projetos de investimento (por exemplo, infra-estrutura), financiado pelo governo. No entanto, essas despesas de investimento estão sujeitas a vários desfasamentos temporais (incluindo, entre outros, atrasos legislativos, de projeto e implementação) e, como resultado, seus efeitos afetarão a economia com um atraso possivelmente substancial; no entanto, o mecanismo de *feedback* usado nos permite incorporar explicitamente esses atrasos ao cálculo das regras de política fiscal. Essas regras fornecerão a sequência exata dos instrumentos de política necessários para garantir que os níveis-alvo do PIB e a dívida pública sejam atendidos simultaneamente, sem qualquer desvio (assim, o erro de rastreamento será igual a zero).
+
+## 3 Formulação do Modelo
+
+O modelo que foi acolhido é uma variante determinista linear do modelo multiplicador-acelerador, juntamente com a restrição orçamentária do governo.
+A parte do acelerador-multiplicador do modelo consiste em uma identidade de renda e quatro equações comportamentais. Assumindo uma economia fechada, a identidade de renda é dada por:
+
+
+$$Y_{t} = C_{t} + I_{t} + \lambda_{0} G_{t}^{I} + \lambda_{1} G_{t-1}^{I} + \lambda_{2} G_{t-2}^{I} + G_{t}^{w},$$
+
+onde $t \in \mathbb{N}$ é o índice de tempo e as sequências reais $C_{t}, I_{t}, G_{t}^{I} e G_{t}^{w}$ denotam respectivamente consumo, investimento privado, gastos gerais do governo (remuneração de empregados, benefícios sociais, etc.) e investimento do governo.
+
+Para os parâmetros $\lambda_{i}$ assumindo que $\lambda_{i} \in (0, 1),  \lambda_0 + \lambda_1 + \lambda_2 = 1$. As despesas governamentais relacionadas a investimentos estão sujeitas a vários prazos, tais como legislativo (o tempo até os projetos financiados pelo governo são aprovados pela comissão parlamentar competente) e os prazos de implementação (o tempo até o desembolso dos fundos) e, como resultado, a política atingirá a economia e seus efeitos se tornarão aparentes em períodos subsequentes. As defasagens são capturadas pelos parâmetros $\lambda_{i}$, que indicam a porcentagem da decisão do governo de investir no período $t$ que será realizado no período $t+i$; ou seja, os parâmetros $\lambda_{i}$ representam a porcentagem dos fundos que o governo pretende investir no período $t$ que são efetivamente desembolsados no período $t+i$. A função de consumo é dada por:
+
+
+$$C_{t} = (1-s) Y_{t-1}^{d} + sY_{t-2}^{d},$$
+
+onde $s \in (0, 1)$ é a propensão marginal a poupar e
+
+$$Y_{t}^{d} = Y_{t} - T_{t},$$
+
+é a renda disponível. Para a função de imposto ($T_{t}$), assumimos que :
+
+$$T_{t} = \tau Y_{t},$$
+
+onde $\tau \in (0, 1)$ é a taxa de imposto constante. O investimento depende do princípio do acelerador:
+
+$$I_{t} = v(Y_{t-1} - Y_{t-2}),$$
+
+onde $v > 0$ denota o acelerador. Finalmente, a restrição orçamentária do governo tem o formato padrão:
+
+$$B_{t} - (1-r) B_{t-1} = G_{t}^{I} + G_{t}^{w} - T_{t}$$
+
+onde $B_{t}$ denota dívida em aberto e $r$ é o juro (constante) em dívida pública. Depois de todas as substituições necessárias e alguma álgebra necessária, temos as seguintes equações:
+
+$$Y_{t} - a_{1} Y_{t-1} - a_{2}Y_{t-2} = \lambda_{0} G_{t}^{I} + \lambda_{1} G_{t-1}^{I} + \lambda_{2} G_{t-2}^{I} + G_{t}^{w},$$
+$$B_{t} - (1-r) B_{t-1} + (1-\tau) Y_{t} = G_{t}^{I} + G_{t}^{w},$$
+
+onde, $a_{1} = (1 - s) (1 - \tau) + v, a_{2} = s (1 - \tau) - v$. Esta é a forma de entrada-saída do modelo, com $Y_{t}, B_{t}$ sendo os produtos (alvos de política) e $G_{t}^{I}, G_{t}^{w}$ sendo os insumos (instrumentos de política).
+
+## 4 Simulação 
+
+Do ponto de vista da política econômica, o momento da ação política é uma questão central. Em particular, dadas as defasagens associadas à conduta política, o governo deveria reagir imediatamente a sinais de desaceleração da atividade econômica, por exemplo, por meio de um desembolso antecipado de fundos de investimento, ou seria preferível adotar uma resposta mais gradual? Além disso, como os atrasos associados à conduta política afetam a implementação real da política? Na análise apresentada acima, vimos que as defasagens de políticas são incorporadas ao nosso modelo por meio dos parâmetros $\lambda_{i}$, usando o seguinte mecanismo:
+
+$$\lambda_{0} G_{t}^{I} + \lambda_{1} G_{t-1}^{I} + \lambda_{2} G_{t-2}^{I}$$
+
+### 4.1 Cenários
+
+Portanto, para os casos em que $\lambda_{2} > \lambda_{0}$, o governo consegue reagir imediatamente aos sinais de uma crise, uma vez que uma porcentagem maior dos gastos será desembolsada no período $t$, enquanto para $\lambda_{0} > \lambda_{2}$ a maior parte das despesas serão efectivamente desembolsadas no período $t+2$; isso implica que as mudanças no tamanho do investimento do governo terão um efeito na economia com um atraso de dois períodos.
+A fim de examinar os efeitos de diferentes tempos de resposta das políticas, realizamos uma série de simulações. Em particular, examinamos os seguintes casos para os parâmetros $\lambda_{i}$:
+
+### 4.2 Packages
+
+
+```{r}
+library(ggplot2)     # Para gráficos
+library(tidyr)       # Para organização de dados
+library(dplyr)       # Pipe operator 
+library(matlib)      # Para álgebra linear 
+library(limSolve)    # Para inverso linear
+library(mosaic)      # Para conjuntos de dados
+```
+
+#### Cenário 1 
+
+$\lambda_2 > \lambda_0$ e o coeficiente de acelerador $v$ egual 1.  
+
+```{r}
+lambda0 = 0.2
+lambda1 = 0.2
+lambda2 = 0.6
+
+v = 1
+s = 0.2
+tau = 0.4
+r = 0.04
+a1 = (1-s)*(1-tau) + v
+a2 = s*(1-tau) - v
+
+tmax = 50
+
+C = rep(0, tmax)
+Y = rep(0, tmax)
+B = rep(0, tmax)
+T = rep(0, tmax)
+G = rep(0, tmax)
+I = rep(0, tmax)
+wG = rep(0, tmax)
+
+C[1] = 18
+I[1] = 10
+Y[1] = 120
+Y[2] = 112
+B[1] = 135
+B[2] = 142
+G[1] = 14.45
+G[2] = 10.63
+G[3] = 25
+wG[1] = 27
+wG[2] = 25
+wG[3] = 35.1
+
+for (t in 4:tmax) {
+  C[t] = (1-s)*Y[t-1] + s*Y[t-2]
+  Y[t] = Y[t] - T[t]
+  T[t] = tau*Y[t]
+  I[t] = v*(Y[t-1] - Y[t-2])
+  B[t] = (1-r)*B[t-1] - (1-tau)*Y[t] + G[t] + G[t]
+  Y[t] = a1*Y[t-1] + a2*Y[t-2]+lambda0*G[t] + lambda1*G[t-1] + 
+    lambda2*G[t-2] + wG[t]
+}
+
+t = seq(1, tmax, 1)
+
+series = data.frame(t, C, Y, T, I, B, Y)
+
+series_gather = gather(series, -t, key = "serie", value = "valor")
+
+ggplot(series_gather, aes(x = t, y = series_gather$valor,
+                            group = series_gather$serie,
+                            color = series_gather$serie)) + 
+  geom_line(size = 1) + theme_light()
+```
+
+O cenário 1 representa uma economia que enfreta uma grave recessão, com grandes reduções nos níveis do PIB, acompanhada de grandes aumentos nos níveis de endividamento. Além disso, as despesas relacionadas ao investimento do governo ($G^I$) exibiram um grande declínio. Assumimos que o governo almeja um aumento de $1 \%$ por período nos níveis do PIB e uma redução correspondente nos níveis de endividamento. Quando o governo é capaz de responder imediatamente a uma recessão (cenário 1), então $G_{t}^I$ precisa aumentar ligeiramente nos primeiros períodos de implementação da política, a fim de proporcionar um impulso à economia através do princípio do multiplicador. 
+
+Ao mesmo tempo, $G_{t}^w$ precisa ser reduzido cumulativamente em $10 \%$, para assegurar que um excedente seja gerado para que uma redução nos níveis de dívida possa ser alcançada. Podemos deduzir que o governo consegue reagir imediatamente aos sinais de uma crise, uma vez que uma porcentagem maior dos gastos será desembolsada no período $t$. No caso de resposta gradual, as mudanças necessárias são menores e ambos os instrumentos exibem caminhos de transição suave. 
+
+Comportamento isolado da função identidade da renda nacional,
+
+```{r}
+ggplot(series_gather, aes(x = t, y = series_gather$valor)) + 
+  geom_point(color = "blue") + geom_line() + theme_classic()
+```
+
+#### Cenário 2
+
+$\lambda_0 > \lambda_2$ e o coeficiente de acelerador $v$ egual 1.75. 
+
+```{r}
+lambda0 = 0.9
+lambda1 = 0.3
+lambda2 = 0.1
+
+v = 1.75
+s = 0.2
+tau = 0.4
+r = 0.04
+a1 = (1-s)*(1-tau) + v
+a2 = s*(1-tau) - v
+
+tmax = 50
+
+C = rep(0, tmax)
+Y = rep(0, tmax)
+B = rep(0, tmax)
+T = rep(0, tmax)
+G = rep(0, tmax)
+I = rep(0, tmax)
+wG = rep(0, tmax)
+
+C[1] = 15
+I[1] = 10
+Y[1] = 105
+Y[2] = 100
+B[1] = 145
+B[2] = 150
+G[1] = 6.9
+G[2] = 4.1
+G[3] = 2.39
+wG[1] = 33.42
+wG[2] = 35.1
+wG[3] = 31.72
+
+for (t in 4:tmax) {
+  C[t] = (1-s)*Y[t-1] + s*Y[t-2]
+  Y[t] = Y[t] - T[t]
+  T[t] = tau*Y[t]
+  I[t] = v*(Y[t-1] - Y[t-2])
+  B[t] = (1-r)*B[t-1] - (1-tau)*Y[t] + G[t] + G[t]
+  Y[t] = a1*Y[t-1] + a2*Y[t-2]+lambda0*G[t] + lambda1*G[t-1] + 
+    lambda2*G[t-2] + wG[t]
+}
+
+t = seq(1, tmax, 1)
+
+series = data.frame(t, C, Y, T, I, B, Y)
+
+series_gather = gather(series, -t, key = "serie", value = "valor")
+
+ggplot(series_gather, aes(x = t, y = series_gather$valor,
+                            group = series_gather$serie,
+                            color = series_gather$serie)) + 
+  geom_line(size = 1) + theme_light()
+```
+
+Pelo contrário, quando o tempo de resposta implica consideráveis atrasos (cenário 2), o tamanho das mudanças dos instrumentos de política é significativamente maior. Fundos de investimento do governo precisam ser imediatamente aumentados devido ao fato de que essa mudança somente vai atingir a economia após dois períodos, e eles exibem um aumento acumulado de mais de $40 \%$. 
+
+```{r}
+ggplot(series_gather, aes(x = t, y = series_gather$valor)) + 
+  geom_point(color = "green") +
+  geom_line() + theme_classic()
+```
+
+
+#### Cenário 3
+
+$\lambda_0 = \lambda_1 = \lambda_2$ e o coeficiente de acelerador $v$ egual 2.
+
+```{r}
+set.seed(123)
+lambda0 = 0.25
+lambda1 = 0.25
+lambda2 = 0.25
+
+v = 2
+s = 0.2
+tau = 0.4
+r = 0.04
+a1 = (1-s)*(1-tau) + v
+a2 = s*(1-tau) - v
+
+tmax = 50
+
+C = rep(0, tmax)
+Y = rep(0, tmax)
+B = rep(0, tmax)
+T = rep(0, tmax)
+G = rep(0, tmax)
+I = rep(0, tmax)
+wG = rep(0, tmax)
+
+C[1] = 18
+I[1] = 10
+Y[1] = 120
+Y[2] = 112
+B[1] = 135
+B[2] = 142
+G[1] = 14.45
+G[2] = 10.63
+G[3] = 25
+wG[1] = 27
+wG[2] = 25
+wG[3] = 35.1
+
+for (t in 4:tmax) {
+  C[t] = (1-s)*Y[t-1] + s*Y[t-2]
+  Y[t] = Y[t] - T[t]
+  T[t] = tau*Y[t]
+  I[t] = v*(Y[t-1] - Y[t-2])
+  B[t] = (1-r)*B[t-1] - (1-tau)*Y[t] + G[t] + G[t]
+  Y[t] = a1*Y[t-1] + a2*Y[t-2]+lambda0*G[t] + lambda1*G[t-1] + 
+    lambda2*G[t-2] + wG[t]
+}
+
+t = seq(1, tmax, 1)
+
+series = data.frame(t, C, Y, T, I, B, Y)
+
+series_gather = gather(series, -t, key = "serie", value = "valor")
+
+ggplot(series_gather, aes(x = t, y = series_gather$valor,
+                            group = series_gather$serie,
+                            color = series_gather$serie)) + 
+  geom_line(size = 1) + theme_light()
+```
+
+No terceiro cenário, no caso de uma recessão, se o governo não reagir imediatamente, como no caso da autorregulação, a economia mergulha em uma crise sem precedentes.
+
+```{r}
+ggplot(series_gather, aes(x = t, y = series_gather$valor)) + 
+  geom_point(color = "red") +
+  geom_line() + theme_classic()
+```
+
+
+## 5 Conclusão
+
+Neste trabalho, apresentamos uma aplicação algorítmica de controle de *feedback* para a projeção de política fiscal de curto prazo. Em particular, no contexto de uma variante linear do modelo multiplicador-acelerador, usando uma técnica de teoria de controle algébrico conhecida como casamento de modelos. Calculamos uma classe de leis de *feedback* linear de tal forma que o sistema rastreará imediatamente uma trajetória predeterminada e desejada para ambos os alvos da política, sem qualquer desvio. Além disso, Para examinar os efeitos dos atrasos, realizamos algumas simulações com diferentes taxas de resposta de política. Os resultados dos experimentos de política indicam que a resposta imediata permite que o governo alcance as metas da política com intervenções políticas relativamente pequenas, em comparação com os casos em que há maiores atrasos no desembolso de fundos.
+
+## Referências
+
+Abel, Andrew B. (1975). A Comparison of Three Control Algorithms to the Monetarist-Fiscalist
+Debate, *Annals of Economic and Social Measurement* 4: 239-252.
+
+Amman, H.M. and Kendrick, D.A. (2003). Mitigation of the Lucas Critique with Stochastic Control Methods, *Journal of Economic Dynamics and Control*, 27:11-12, 2035-2057.
+
+Astrom, K.J. and Wittenmark, B (1996). Computer-Controlled Systems: Theory and Design, (3rd ed.). *Prentice Hall*.
+
+Athanasiou, G. and Kotsios, S. (2008). An Algorithmic Approach to Exchange Rate Stabilisation, *Economic Modelling*, 25:6, 1246-1260.
+
+Christodoulakis, N. and Van Der Ploeg, F. (1987). Macrodynamic Formulation with Conflicting Views of the Economy: A Synthesis of Optimal Control and Feedback Design, *International Journal of Systems Science*, 18:3, 449-479.
+
+Gandolfo, G. (1997). Economic Dynamics, *Springer*.
+
+Kendrick, D. and Shoukry, G. (2014). Quarterly Fiscal Policy Experiments with a Multiplier-Accelerator Model, *Computational Economics*, 44:3, 269-293.
+
+Kostarakos, I. and Kotsios, S. (2015). Fiscal Policy Design in Greece in the Aftermath of the Crisis: An Algorithmic Approach, *submitted*, Presented at the 7th Biennial HO PhD Symposium on Contemporary Greece and Cyprus, LSE, 4-5 June 2015.
+
+Kostarakos, I. and Kotsios, S. (2015). Controlling GDP and Public Debt Using Feedback Policy Rules for Government Expenditures and Taxation, *submitted*.
+
+Kotsios, S. and Leventidis, J. (2004). A Feedback Policy for a Modified Samuelson-Hicks Model, *International Journal of Systems Science*, 35:6, 331-341.
+
+Orszag, Peter (2011). Too Much of a Good Thing, *The New Republic*, Sept 14.
+
+Phillips, A.W. (1954). Stabilisation Policy in a Closed Economy, *Economic Journal*, 64:254, 290-323.
+
+Samuelson, P. (1939). Interactions between the Multiplier Analysis and the Principle of Acceleration, *Review of Economics and Statistics*, 21:2, 75-78.
+
+Simon, Carl e L. Blume (1994). Mathematical for Economics, *Norton and Company*, New York.
+
+Shone, R. (2002). Economic Dynamics: Phase diagram and their economic application,
+*Cambridge*.
+
+Stelios Kotsios et al (2017). Feedback Policy Rules for Government Spending : An Algorithmic Approach, *Journal of Economic Structures*, 6(1), DOI: 10.1186/s40008-017-0065-z. 
+
+Taylor, John B. (1993). Discretion versus Policy Rules in Practice, *Carnegie-Rochester Conference Series on Public Policy*, 39, 195-214.
+
+Taylor, John B., ed. (1999). Monetary Policy Rules. Chicago, IL: *University of Chicago Press*.
+
+
+
+
+
+
+
